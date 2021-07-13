@@ -21,7 +21,7 @@ const objects = [
   undefined,
   null,
   42,
-  circular
+  circular,
 ];
 
 const hostObject = new (internalBinding('js_stream').JSStream)();
@@ -50,7 +50,7 @@ const hostObject = new (internalBinding('js_stream').JSStream)();
 {
   const ser = new v8.DefaultSerializer();
   ser._getDataCloneError = common.mustCall((message) => {
-    assert.strictEqual(message, '[object Object] could not be cloned.');
+    assert.strictEqual(message, '#<Object> could not be cloned.');
     return new Error('foobar');
   });
 
@@ -235,4 +235,11 @@ const hostObject = new (internalBinding('js_stream').JSStream)();
     () => new v8.Deserializer(INVALID_SOURCE),
     /^TypeError: buffer must be a TypedArray or a DataView$/,
   );
+}
+
+{
+  // Regression test for https://github.com/nodejs/node/issues/37978
+  assert.throws(() => {
+    new v8.Deserializer(new v8.Serializer().releaseBuffer()).readDouble();
+  }, /ReadDouble\(\) failed/);
 }

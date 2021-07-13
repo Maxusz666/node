@@ -1,5 +1,4 @@
 const t = require('tap')
-const requireInject = require('require-inject')
 const npm = {
   prefix: null,
   color: true,
@@ -12,7 +11,7 @@ const { resolve } = require('path')
 
 const OUTPUT = []
 
-const Explain = requireInject('../../lib/explain.js', {
+const Explain = t.mock('../../lib/explain.js', {
 
   // keep the snapshots pared down a bit, since this has its own tests.
   '../../lib/utils/explain-dep.js': {
@@ -27,7 +26,7 @@ t.test('no args throws usage', t => {
   t.plan(1)
   explain.exec([], er => {
     t.equal(er, explain.usage)
-    t.done()
+    t.end()
   })
 })
 
@@ -49,10 +48,9 @@ t.test('invalid package name throws not found', t => {
 })
 
 t.test('explain some nodes', t => {
-  t.afterEach((cb) => {
+  t.afterEach(() => {
     OUTPUT.length = 0
     npm.flatOptions.json = false
-    cb()
   })
 
   npm.prefix = t.testdir({
@@ -172,8 +170,134 @@ t.test('explain some nodes', t => {
     t.plan(1)
     explain.exec(['asdf/foo/bar', 'quux@1.x'], er => {
       t.equal(er, 'No dependencies found matching asdf/foo/bar, quux@1.x')
-      t.done()
+      t.end()
     })
   })
   t.end()
+})
+
+t.test('workspaces', async t => {
+  npm.localPrefix = npm.prefix = t.testdir({
+    'package.json': JSON.stringify({
+      name: 'workspaces-project',
+      version: '1.0.0',
+      workspaces: ['packages/*'],
+      dependencies: {
+        abbrev: '^1.0.0',
+      },
+    }),
+    node_modules: {
+      a: t.fixture('symlink', '../packages/a'),
+      b: t.fixture('symlink', '../packages/b'),
+      c: t.fixture('symlink', '../packages/c'),
+      once: {
+        'package.json': JSON.stringify({
+          name: 'once',
+          version: '1.0.0',
+          dependencies: {
+            wrappy: '2.0.0',
+          },
+        }),
+      },
+      abbrev: {
+        'package.json': JSON.stringify({
+          name: 'abbrev',
+          version: '1.0.0',
+        }),
+      },
+      wrappy: {
+        'package.json': JSON.stringify({
+          name: 'wrappy',
+          version: '2.0.0',
+        }),
+      },
+    },
+    packages: {
+      a: {
+        'package.json': JSON.stringify({
+          name: 'a',
+          version: '1.0.0',
+          dependencies: {
+            once: '1.0.0',
+          },
+        }),
+      },
+      b: {
+        'package.json': JSON.stringify({
+          name: 'b',
+          version: '1.0.0',
+          dependencies: {
+            abbrev: '^1.0.0',
+          },
+        }),
+      },
+      c: {
+        'package.json': JSON.stringify({
+          name: 'c',
+          version: '1.0.0',
+        }),
+      },
+    },
+  })
+
+  await new Promise((res, rej) => {
+    explain.exec(['wrappy'], err => {
+      if (err)
+        rej(err)
+
+      t.strictSame(
+        OUTPUT,
+        [['wrappy@2.0.0 depth=Infinity color=true']],
+        'should explain workspaces deps'
+      )
+      OUTPUT.length = 0
+      res()
+    })
+  })
+
+  await new Promise((res, rej) => {
+    explain.execWorkspaces(['wrappy'], ['a'], err => {
+      if (err)
+        rej(err)
+
+      t.strictSame(
+        OUTPUT,
+        [
+          ['wrappy@2.0.0 depth=Infinity color=true'],
+        ],
+        'should explain deps when filtering to a single ws'
+      )
+      OUTPUT.length = 0
+      res()
+    })
+  })
+
+  await new Promise((res, rej) => {
+    explain.execWorkspaces(['abbrev'], [], err => {
+      if (err)
+        rej(err)
+
+      t.strictSame(
+        OUTPUT,
+        [
+          ['abbrev@1.0.0 depth=Infinity color=true'],
+        ],
+        'should explain deps of workspaces only'
+      )
+      OUTPUT.length = 0
+      res()
+    })
+  })
+
+  await new Promise((res, rej) => {
+    explain.execWorkspaces(['abbrev'], ['a'], err => {
+      t.equal(
+        err,
+        'No dependencies found matching abbrev',
+        'should throw usage if dep not found within filtered ws'
+      )
+
+      res()
+    })
+  })
 })

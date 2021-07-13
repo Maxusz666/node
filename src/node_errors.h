@@ -32,6 +32,7 @@ void OnFatalError(const char* location, const char* message);
   V(ERR_BUFFER_CONTEXT_NOT_AVAILABLE, Error)                                   \
   V(ERR_BUFFER_OUT_OF_BOUNDS, RangeError)                                      \
   V(ERR_BUFFER_TOO_LARGE, Error)                                               \
+  V(ERR_CLOSED_MESSAGE_PORT, Error)                                            \
   V(ERR_CONSTRUCT_CALL_REQUIRED, TypeError)                                    \
   V(ERR_CONSTRUCT_CALL_INVALID, TypeError)                                     \
   V(ERR_CRYPTO_INITIALIZATION_FAILED, Error)                                   \
@@ -56,6 +57,7 @@ void OnFatalError(const char* location, const char* message);
   V(ERR_CRYPTO_JOB_INIT_FAILED, Error)                                         \
   V(ERR_DLOPEN_FAILED, Error)                                                  \
   V(ERR_EXECUTION_ENVIRONMENT_NOT_AVAILABLE, Error)                            \
+  V(ERR_INVALID_ADDRESS, Error)                                                \
   V(ERR_INVALID_ARG_VALUE, TypeError)                                          \
   V(ERR_OSSL_EVP_INVALID_DIGEST, Error)                                        \
   V(ERR_INVALID_ARG_TYPE, TypeError)                                           \
@@ -117,6 +119,7 @@ ERRORS_WITH_CODE(V)
 #define PREDEFINED_ERROR_MESSAGES(V)                                           \
   V(ERR_BUFFER_CONTEXT_NOT_AVAILABLE,                                          \
     "Buffer is not available for the current Context")                         \
+  V(ERR_CLOSED_MESSAGE_PORT, "Cannot send data on closed MessagePort")         \
   V(ERR_CONSTRUCT_CALL_INVALID, "Constructor cannot be called")                \
   V(ERR_CONSTRUCT_CALL_REQUIRED, "Cannot call constructor without `new`")      \
   V(ERR_CRYPTO_INITIALIZATION_FAILED, "Initialization failed")                 \
@@ -143,6 +146,7 @@ ERRORS_WITH_CODE(V)
   V(ERR_DLOPEN_FAILED, "DLOpen failed")                                        \
   V(ERR_EXECUTION_ENVIRONMENT_NOT_AVAILABLE,                                   \
     "Context not associated with Node.js environment")                         \
+  V(ERR_INVALID_ADDRESS, "Invalid socket address")                             \
   V(ERR_INVALID_MODULE, "No such module")                                      \
   V(ERR_INVALID_THIS, "Value of \"this\" is the wrong type")                   \
   V(ERR_INVALID_TRANSFER_OBJECT, "Found invalid object in transferList")       \

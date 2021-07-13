@@ -111,7 +111,7 @@ struct SignConfiguration final : public MemoryRetainer {
 
   CryptoJobMode job_mode;
   Mode mode;
-  std::shared_ptr<KeyObjectData> key;
+  ManagedEVPPKey key;
   ByteSource data;
   ByteSource signature;
   const EVP_MD* digest = nullptr;
@@ -127,8 +127,8 @@ struct SignConfiguration final : public MemoryRetainer {
   SignConfiguration& operator=(SignConfiguration&& other) noexcept;
 
   void MemoryInfo(MemoryTracker* tracker) const override;
-  SET_MEMORY_INFO_NAME(SignConfiguration);
-  SET_SELF_SIZE(SignConfiguration);
+  SET_MEMORY_INFO_NAME(SignConfiguration)
+  SET_SELF_SIZE(SignConfiguration)
 };
 
 struct SignTraits final {

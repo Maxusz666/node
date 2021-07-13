@@ -1,7 +1,7 @@
+const t = require('tap')
 const fs = require('fs')
 const { resolve } = require('path')
-const mockNpm = require('../fixtures/mock-npm')
-const t = require('tap')
+const { fake: mockNpm } = require('../fixtures/mock-npm')
 
 let result = ''
 
@@ -19,12 +19,11 @@ const npm = mockNpm({
 const Rebuild = require('../../lib/rebuild.js')
 const rebuild = new Rebuild(npm)
 
-t.afterEach(cb => {
+t.afterEach(() => {
   npm.prefix = ''
   config.global = false
   npm.globalDir = ''
   result = ''
-  cb()
 })
 
 t.test('no args', t => {

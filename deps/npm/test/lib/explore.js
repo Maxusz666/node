@@ -1,5 +1,4 @@
 const t = require('tap')
-const requireInject = require('require-inject')
 
 let RPJ_ERROR = null
 let RPJ_CALLED = ''
@@ -44,15 +43,11 @@ const mockRunScript = ({ pkg, banner, path, event, stdio }) => {
 }
 
 const output = []
-let ERROR_HANDLER_CALLED = null
 const logs = []
 const getExplore = (windows) => {
-  const Explore = requireInject('../../lib/explore.js', {
+  const Explore = t.mock('../../lib/explore.js', {
     '../../lib/utils/is-windows.js': windows,
     path: require('path')[windows ? 'win32' : 'posix'],
-    '../../lib/utils/error-handler.js': er => {
-      ERROR_HANDLER_CALLED = er
-    },
     'read-package-json-fast': mockRPJ,
     '@npmcli/run-script': mockRunScript,
   })
@@ -77,21 +72,16 @@ const windowsExplore = getExplore(true)
 const posixExplore = getExplore(false)
 
 t.test('basic interactive', t => {
-  t.afterEach((cb) => {
-    output.length = 0
-    cb()
-  })
+  t.afterEach(() => output.length = 0)
 
   t.test('windows', t => windowsExplore.exec(['pkg'], er => {
     if (er)
       throw er
 
     t.strictSame({
-      ERROR_HANDLER_CALLED,
       RPJ_CALLED,
       RUN_SCRIPT_EXEC,
     }, {
-      ERROR_HANDLER_CALLED: null,
       RPJ_CALLED: 'c:\\npm\\dir\\pkg\\package.json',
       RUN_SCRIPT_EXEC: 'shell-command',
     })
@@ -106,11 +96,9 @@ t.test('basic interactive', t => {
       throw er
 
     t.strictSame({
-      ERROR_HANDLER_CALLED,
       RPJ_CALLED,
       RUN_SCRIPT_EXEC,
     }, {
-      ERROR_HANDLER_CALLED: null,
       RPJ_CALLED: '/npm/dir/pkg/package.json',
       RUN_SCRIPT_EXEC: 'shell-command',
     })
@@ -125,16 +113,14 @@ t.test('basic interactive', t => {
 
 t.test('interactive tracks exit code', t => {
   const { exitCode } = process
-  t.beforeEach((cb) => {
+  t.beforeEach(() => {
     process.exitCode = exitCode
     RUN_SCRIPT_EXIT_CODE = 99
-    cb()
   })
-  t.afterEach((cb) => {
+  t.afterEach(() => {
     RUN_SCRIPT_EXIT_CODE = 0
     output.length = 0
     process.exitCode = exitCode
-    cb()
   })
 
   t.test('windows', t => windowsExplore.exec(['pkg'], er => {
@@ -142,11 +128,9 @@ t.test('interactive tracks exit code', t => {
       throw er
 
     t.strictSame({
-      ERROR_HANDLER_CALLED,
       RPJ_CALLED,
       RUN_SCRIPT_EXEC,
     }, {
-      ERROR_HANDLER_CALLED: null,
       RPJ_CALLED: 'c:\\npm\\dir\\pkg\\package.json',
       RUN_SCRIPT_EXEC: 'shell-command',
     })
@@ -162,11 +146,9 @@ t.test('interactive tracks exit code', t => {
       throw er
 
     t.strictSame({
-      ERROR_HANDLER_CALLED,
       RPJ_CALLED,
       RUN_SCRIPT_EXEC,
     }, {
-      ERROR_HANDLER_CALLED: null,
       RPJ_CALLED: '/npm/dir/pkg/package.json',
       RUN_SCRIPT_EXEC: 'shell-command',
     })
@@ -223,21 +205,16 @@ t.test('interactive tracks exit code', t => {
 })
 
 t.test('basic non-interactive', t => {
-  t.afterEach((cb) => {
-    output.length = 0
-    cb()
-  })
+  t.afterEach(() => output.length = 0)
 
   t.test('windows', t => windowsExplore.exec(['pkg', 'ls'], er => {
     if (er)
       throw er
 
     t.strictSame({
-      ERROR_HANDLER_CALLED,
       RPJ_CALLED,
       RUN_SCRIPT_EXEC,
     }, {
-      ERROR_HANDLER_CALLED: null,
       RPJ_CALLED: 'c:\\npm\\dir\\pkg\\package.json',
       RUN_SCRIPT_EXEC: 'ls',
     })
@@ -250,11 +227,9 @@ t.test('basic non-interactive', t => {
       throw er
 
     t.strictSame({
-      ERROR_HANDLER_CALLED,
       RPJ_CALLED,
       RUN_SCRIPT_EXEC,
     }, {
-      ERROR_HANDLER_CALLED: null,
       RPJ_CALLED: '/npm/dir/pkg/package.json',
       RUN_SCRIPT_EXEC: 'ls',
     })
@@ -267,22 +242,17 @@ t.test('basic non-interactive', t => {
 
 t.test('signal fails non-interactive', t => {
   const { exitCode } = process
-  t.afterEach((cb) => {
+  t.afterEach(() => {
     output.length = 0
     logs.length = 0
-    cb()
   })
 
-  t.beforeEach(cb => {
+  t.beforeEach(() => {
     RUN_SCRIPT_SIGNAL = 'SIGPROBLEM'
     RUN_SCRIPT_EXIT_CODE = null
     process.exitCode = exitCode
-    cb()
   })
-  t.afterEach(cb => {
-    process.exitCode = exitCode
-    cb()
-  })
+  t.afterEach(() => process.exitCode = exitCode)
 
   t.test('windows', t => windowsExplore.exec(['pkg', 'ls'], er => {
     t.match(er, {
@@ -324,7 +294,6 @@ t.test('signal fails non-interactive', t => {
 t.test('usage if no pkg provided', t => {
   t.teardown(() => {
     output.length = 0
-    ERROR_HANDLER_CALLED = null
   })
   const noPkg = [
     [],
@@ -340,11 +309,9 @@ t.test('usage if no pkg provided', t => {
       posixExplore.exec(args, er => {
         t.match(er, 'Usage:')
         t.strictSame({
-          ERROR_HANDLER_CALLED: null,
           RPJ_CALLED,
           RUN_SCRIPT_EXEC,
         }, {
-          ERROR_HANDLER_CALLED: null,
           RPJ_CALLED: '/npm/dir/pkg/package.json',
           RUN_SCRIPT_EXEC: 'ls',
         })
@@ -359,11 +326,9 @@ t.test('pkg not installed', t => {
 
   posixExplore.exec(['pkg', 'ls'], er => {
     t.strictSame({
-      ERROR_HANDLER_CALLED,
       RPJ_CALLED,
       RUN_SCRIPT_EXEC,
     }, {
-      ERROR_HANDLER_CALLED: null,
       RPJ_CALLED: '/npm/dir/pkg/package.json',
       RUN_SCRIPT_EXEC: 'ls',
     })

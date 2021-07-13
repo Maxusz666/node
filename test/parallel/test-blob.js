@@ -3,6 +3,7 @@
 const common = require('../common');
 const assert = require('assert');
 const { Blob } = require('buffer');
+const { inspect } = require('util');
 
 {
   const b = new Blob();
@@ -100,7 +101,7 @@ assert.throws(() => new Blob({}), {
       'e',
       'l',
       'lo',
-      Buffer.from('world')
+      Buffer.from('world'),
     ]);
   assert.strictEqual(b.size, 10);
   b.text().then(common.mustCall((text) => {
@@ -189,4 +190,11 @@ assert.throws(() => new Blob({}), {
   b.text().then(common.mustCall((text) => {
     assert.strictEqual(text, 'test42');
   }));
+}
+
+{
+  const b = new Blob();
+  assert.strictEqual(inspect(b, { depth: null }),
+                     'Blob { size: 0, type: \'\' }');
+  assert.strictEqual(inspect(b, { depth: -1 }), '[Blob]');
 }

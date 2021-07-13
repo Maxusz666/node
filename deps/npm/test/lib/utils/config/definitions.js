@@ -1,6 +1,5 @@
 const t = require('tap')
 
-const requireInject = require('require-inject')
 const { resolve } = require('path')
 
 // have to fake the node version, or else it'll only pass on this one
@@ -18,6 +17,11 @@ const defpath = '../../../../lib/utils/config/definitions.js'
 delete process.env.NODE_ENV
 const definitions = require(defpath)
 
+// Tie the definitions to a snapshot so that if they change we are forced to
+// update snapshots, which rebuilds the docs
+for (const key of Object.keys(definitions))
+  t.matchSnapshot(definitions[key].describe(), `config description for ${key}`)
+
 const isWin = '../../../../lib/utils/is-windows.js'
 
 // snapshot these just so we note when they change
@@ -30,9 +34,9 @@ t.equal(definitions['node-version'].default, process.version, 'node-version defa
 
 t.test('basic flattening function camelCases from css-case', t => {
   const flat = {}
-  const obj = { 'always-auth': true }
-  definitions['always-auth'].flatten('always-auth', obj, flat)
-  t.strictSame(flat, { alwaysAuth: true })
+  const obj = { 'prefer-online': true }
+  definitions['prefer-online'].flatten('prefer-online', obj, flat)
+  t.strictSame(flat, { preferOnline: true })
   t.end()
 })
 
@@ -40,25 +44,25 @@ t.test('editor', t => {
   t.test('has EDITOR and VISUAL, use EDITOR', t => {
     process.env.EDITOR = 'vim'
     process.env.VISUAL = 'mate'
-    const defs = requireInject(defpath)
+    const defs = t.mock(defpath)
     t.equal(defs.editor.default, 'vim')
     t.end()
   })
   t.test('has VISUAL but no EDITOR, use VISUAL', t => {
     delete process.env.EDITOR
     process.env.VISUAL = 'mate'
-    const defs = requireInject(defpath)
+    const defs = t.mock(defpath)
     t.equal(defs.editor.default, 'mate')
     t.end()
   })
   t.test('has neither EDITOR nor VISUAL, system specific', t => {
     delete process.env.EDITOR
     delete process.env.VISUAL
-    const defsWin = requireInject(defpath, {
+    const defsWin = t.mock(defpath, {
       [isWin]: true,
     })
     t.equal(defsWin.editor.default, 'notepad.exe')
-    const defsNix = requireInject(defpath, {
+    const defsNix = t.mock(defpath, {
       [isWin]: false,
     })
     t.equal(defsNix.editor.default, 'vi')
@@ -70,12 +74,12 @@ t.test('editor', t => {
 t.test('shell', t => {
   t.test('windows, env.ComSpec then cmd.exe', t => {
     process.env.ComSpec = 'command.com'
-    const defsComSpec = requireInject(defpath, {
+    const defsComSpec = t.mock(defpath, {
       [isWin]: true,
     })
     t.equal(defsComSpec.shell.default, 'command.com')
     delete process.env.ComSpec
-    const defsNoComSpec = requireInject(defpath, {
+    const defsNoComSpec = t.mock(defpath, {
       [isWin]: true,
     })
     t.equal(defsNoComSpec.shell.default, 'cmd')
@@ -84,12 +88,12 @@ t.test('shell', t => {
 
   t.test('nix, SHELL then sh', t => {
     process.env.SHELL = '/usr/local/bin/bash'
-    const defsShell = requireInject(defpath, {
+    const defsShell = t.mock(defpath, {
       [isWin]: false,
     })
     t.equal(defsShell.shell.default, '/usr/local/bin/bash')
     delete process.env.SHELL
-    const defsNoShell = requireInject(defpath, {
+    const defsNoShell = t.mock(defpath, {
       [isWin]: false,
     })
     t.equal(defsNoShell.shell.default, 'sh')
@@ -108,7 +112,7 @@ t.test('local-address allowed types', t => {
         eth69: [{ address: 'no place like home' }],
       }),
     }
-    const defs = requireInject(defpath, { os })
+    const defs = t.mock(defpath, { os })
     t.same(defs['local-address'].type, [
       null,
       '127.0.0.1',
@@ -123,7 +127,7 @@ t.test('local-address allowed types', t => {
         throw new Error('no network interfaces for some reason')
       },
     }
-    const defs = requireInject(defpath, { os })
+    const defs = t.mock(defpath, { os })
     t.same(defs['local-address'].type, [null])
     t.end()
   })
@@ -138,42 +142,42 @@ t.test('unicode allowed?', t => {
   process.env.LC_CTYPE = 'UTF-8'
   process.env.LANG = 'Unicode utf-8'
 
-  const lcAll = requireInject(defpath)
+  const lcAll = t.mock(defpath)
   t.equal(lcAll.unicode.default, true)
   process.env.LC_ALL = 'no unicode for youUUUU!'
-  const noLcAll = requireInject(defpath)
+  const noLcAll = t.mock(defpath)
   t.equal(noLcAll.unicode.default, false)
 
   delete process.env.LC_ALL
-  const lcCtype = requireInject(defpath)
+  const lcCtype = t.mock(defpath)
   t.equal(lcCtype.unicode.default, true)
   process.env.LC_CTYPE = 'something other than unicode version 8'
-  const noLcCtype = requireInject(defpath)
+  const noLcCtype = t.mock(defpath)
   t.equal(noLcCtype.unicode.default, false)
 
   delete process.env.LC_CTYPE
-  const lang = requireInject(defpath)
+  const lang = t.mock(defpath)
   t.equal(lang.unicode.default, true)
   process.env.LANG = 'ISO-8859-1'
-  const noLang = requireInject(defpath)
+  const noLang = t.mock(defpath)
   t.equal(noLang.unicode.default, false)
   t.end()
 })
 
 t.test('cache', t => {
   process.env.LOCALAPPDATA = 'app/data/local'
-  const defsWinLocalAppData = requireInject(defpath, {
+  const defsWinLocalAppData = t.mock(defpath, {
     [isWin]: true,
   })
   t.equal(defsWinLocalAppData.cache.default, 'app/data/local/npm-cache')
 
   delete process.env.LOCALAPPDATA
-  const defsWinNoLocalAppData = requireInject(defpath, {
+  const defsWinNoLocalAppData = t.mock(defpath, {
     [isWin]: true,
   })
   t.equal(defsWinNoLocalAppData.cache.default, '~/npm-cache')
 
-  const defsNix = requireInject(defpath, {
+  const defsNix = t.mock(defpath, {
     [isWin]: false,
   })
   t.equal(defsNix.cache.default, '~/.npm')
@@ -182,6 +186,7 @@ t.test('cache', t => {
   defsNix.cache.flatten('cache', { cache: '/some/cache/value' }, flat)
   const {join} = require('path')
   t.equal(flat.cache, join('/some/cache/value', '_cacache'))
+  t.equal(flat.npxCache, join('/some/cache/value', '_npx'))
 
   t.end()
 })
@@ -236,7 +241,7 @@ t.test('flatteners that populate flat.omit array', t => {
     t.strictSame(flat, { omit: ['optional'] }, 'do not omit what is included')
 
     process.env.NODE_ENV = 'production'
-    const defProdEnv = requireInject(defpath)
+    const defProdEnv = t.mock(defpath)
     t.strictSame(defProdEnv.omit.default, ['dev'], 'omit dev in production')
     t.end()
   })
@@ -388,15 +393,15 @@ t.test('color', t => {
   t.strictSame(flat, {color: true}, '--color turns on color when stdout is tty')
 
   delete process.env.NO_COLOR
-  const defsAllowColor = requireInject(defpath)
+  const defsAllowColor = t.mock(defpath)
   t.equal(defsAllowColor.color.default, true, 'default true when no NO_COLOR env')
 
   process.env.NO_COLOR = '0'
-  const defsNoColor0 = requireInject(defpath)
+  const defsNoColor0 = t.mock(defpath)
   t.equal(defsNoColor0.color.default, true, 'default true when no NO_COLOR=0')
 
   process.env.NO_COLOR = '1'
-  const defsNoColor1 = requireInject(defpath)
+  const defsNoColor1 = t.mock(defpath)
   t.equal(defsNoColor1.color.default, false, 'default false when no NO_COLOR=1')
 
   t.end()
@@ -695,7 +700,7 @@ YYYY\r
   })
   t.test('error other than ENOENT gets thrown', t => {
     const poo = new Error('poo')
-    const defnReadFileThrows = requireInject(defpath, {
+    const defnReadFileThrows = t.mock(defpath, {
       fs: {
         ...require('fs'),
         readFileSync: () => {
@@ -711,10 +716,10 @@ YYYY\r
 })
 
 t.test('detect CI', t => {
-  const defnNoCI = requireInject(defpath, {
+  const defnNoCI = t.mock(defpath, {
     '@npmcli/ci-detect': () => false,
   })
-  const defnCIFoo = requireInject(defpath, {
+  const defnCIFoo = t.mock(defpath, {
     '@npmcli/ci-detect': () => 'foo',
   })
   t.equal(defnNoCI['ci-name'].default, null, 'null when not in CI')
@@ -730,7 +735,7 @@ t.test('user-agent', t => {
   }
   const flat = {}
   const expectNoCI = `npm/1.2.3 node/9.8.7 ` +
-    `${process.platform} ${process.arch}`
+    `${process.platform} ${process.arch} workspaces/false`
   definitions['user-agent'].flatten('user-agent', obj, flat)
   t.equal(flat.userAgent, expectNoCI)
   t.equal(process.env.npm_config_user_agent, flat.userAgent, 'npm_user_config environment is set')
@@ -741,6 +746,23 @@ t.test('user-agent', t => {
   const expectCI = `${expectNoCI} ci/foo`
   definitions['user-agent'].flatten('user-agent', obj, flat)
   t.equal(flat.userAgent, expectCI)
+  t.equal(process.env.npm_config_user_agent, flat.userAgent, 'npm_user_config environment is set')
+  t.equal(obj['user-agent'], flat.userAgent, 'config user-agent template is translated')
+
+  delete obj['ci-name']
+  obj.workspaces = true
+  obj['user-agent'] = definitions['user-agent'].default
+  const expectWorkspaces = expectNoCI.replace('workspaces/false', 'workspaces/true')
+  definitions['user-agent'].flatten('user-agent', obj, flat)
+  t.equal(flat.userAgent, expectWorkspaces)
+  t.equal(process.env.npm_config_user_agent, flat.userAgent, 'npm_user_config environment is set')
+  t.equal(obj['user-agent'], flat.userAgent, 'config user-agent template is translated')
+
+  delete obj.workspaces
+  obj.workspace = ['foo']
+  obj['user-agent'] = definitions['user-agent'].default
+  definitions['user-agent'].flatten('user-agent', obj, flat)
+  t.equal(flat.userAgent, expectWorkspaces)
   t.equal(process.env.npm_config_user_agent, flat.userAgent, 'npm_user_config environment is set')
   t.equal(obj['user-agent'], flat.userAgent, 'config user-agent template is translated')
   t.end()

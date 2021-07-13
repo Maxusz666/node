@@ -1,22 +1,20 @@
-const { test } = require('tap')
-const requireInject = require('require-inject')
-const mockNpm = require('../fixtures/mock-npm')
+const t = require('tap')
+const { real: mockNpm } = require('../fixtures/mock-npm')
 
-test('should throw in global mode', (t) => {
-  const Dedupe = requireInject('../../lib/dedupe.js')
-  const npm = mockNpm({
-    config: { 'dry-run': false, global: true },
-  })
-  const dedupe = new Dedupe(npm)
-
-  dedupe.exec([], er => {
-    t.match(er, { code: 'EDEDUPEGLOBAL' }, 'throws EDEDUPEGLOBAL')
-    t.end()
-  })
+t.test('should throw in global mode', async (t) => {
+  const { npm, command } = mockNpm(t)
+  await npm.load()
+  npm.config.set('global', true)
+  t.rejects(
+    command('dedupe'),
+    { code: 'EDEDUPEGLOBAL' },
+    'throws EDEDUPEGLOBALE'
+  )
 })
 
-test('should remove dupes using Arborist', (t) => {
-  const Dedupe = requireInject('../../lib/dedupe.js', {
+t.test('should remove dupes using Arborist', async (t) => {
+  t.plan(5)
+  const { npm, command } = mockNpm(t, {
     '@npmcli/arborist': function (args) {
       t.ok(args, 'gets options object')
       t.ok(args.path, 'gets path option')
@@ -29,37 +27,24 @@ test('should remove dupes using Arborist', (t) => {
       t.ok(arb, 'gets arborist tree')
     },
   })
-  const npm = mockNpm({
-    prefix: 'foo',
-    config: {
-      'dry-run': 'true',
-    },
-  })
-  const dedupe = new Dedupe(npm)
-  dedupe.exec([], er => {
-    if (er)
-      throw er
-    t.ok(true, 'callback is called')
-    t.end()
-  })
+  await npm.load()
+  npm.config.set('prefix', 'foo')
+  npm.config.set('dry-run', 'true')
+  await command('dedupe')
 })
 
-test('should remove dupes using Arborist - no arguments', (t) => {
-  const Dedupe = requireInject('../../lib/dedupe.js', {
+t.test('should remove dupes using Arborist - no arguments', async (t) => {
+  t.plan(1)
+  const { npm, command } = mockNpm(t, {
     '@npmcli/arborist': function (args) {
       t.ok(args.dryRun, 'gets dryRun from config')
       this.dedupe = () => {}
     },
     '../../lib/utils/reify-output.js': () => {},
+    '../../lib/utils/reify-finish.js': () => {},
   })
-  const npm = mockNpm({
-    prefix: 'foo',
-    config: {
-      'dry-run': 'true',
-    },
-  })
-  const dedupe = new Dedupe(npm)
-  dedupe.exec(null, () => {
-    t.end()
-  })
+  await npm.load()
+  npm.config.set('prefix', 'foo')
+  npm.config.set('dry-run', true)
+  await command('dedupe')
 })

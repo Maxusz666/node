@@ -19,7 +19,7 @@ set JS_SUITES=default
 set NATIVE_SUITES=addons js-native-api node-api
 @rem CI_* variables should be kept synchronized with the ones in Makefile
 set "CI_NATIVE_SUITES=%NATIVE_SUITES% benchmark"
-set "CI_JS_SUITES=%JS_SUITES%"
+set "CI_JS_SUITES=%JS_SUITES% pummel"
 set CI_DOC=doctool
 @rem Same as the test-ci target in Makefile
 set "common_test_suites=%JS_SUITES% %NATIVE_SUITES%&set build_addons=1&set build_js_native_api_tests=1&set build_node_api_tests=1"
@@ -282,7 +282,7 @@ goto msbuild-found
 :msbuild-not-found
 echo Failed to find a suitable Visual Studio installation.
 echo Try to run in a "Developer Command Prompt" or consult
-echo https://github.com/nodejs/node/blob/master/BUILDING.md#windows
+echo https://github.com/nodejs/node/blob/HEAD/BUILDING.md#windows
 goto exit
 
 :msbuild-found
@@ -295,7 +295,7 @@ if defined projgen goto run-configure
 if not exist node.sln goto run-configure
 if not exist .gyp_configure_stamp goto run-configure
 echo %configure_flags% > .tmp_gyp_configure_stamp
-where /R . /T *.gyp? >> .tmp_gyp_configure_stamp
+where /R . /T *.gyp* >> .tmp_gyp_configure_stamp
 fc .gyp_configure_stamp .tmp_gyp_configure_stamp >NUL 2>&1
 if errorlevel 1 goto run-configure
 
@@ -316,7 +316,7 @@ if not exist node.sln goto create-msvs-files-failed
 set project_generated=1
 echo Project files generated.
 echo %configure_flags% > .gyp_configure_stamp
-where /R . /T *.gyp? >> .gyp_configure_stamp
+where /R . /T *.gyp* >> .gyp_configure_stamp
 
 :msbuild
 @rem Skip build if requested.
@@ -526,7 +526,7 @@ robocopy /e doc\api %config%\doc\api
 robocopy /e doc\api_assets %config%\doc\api\assets
 
 for %%F in (%config%\doc\api\*.md) do (
-  %node_exe% tools\doc\generate.js --node-version=v%FULLVERSION% %%F --output-directory=%%~dF%%~pF
+  %node_exe% tools\doc\generate.mjs --node-version=v%FULLVERSION% %%F --output-directory=%%~dF%%~pF
 )
 
 :run
@@ -543,7 +543,7 @@ for /d %%F in (test\addons\??_*) do (
   rd /s /q %%F
 )
 :: generate
-"%node_exe%" tools\doc\addon-verify.js
+"%node_exe%" tools\doc\addon-verify.mjs
 if %errorlevel% neq 0 exit /b %errorlevel%
 :: building addons
 setlocal

@@ -346,7 +346,9 @@ whenever `rl.prompt()` is called.
 
 ### `rl.getPrompt()`
 <!-- YAML
-added: v15.3.0
+added:
+  - v15.3.0
+  - v14.17.0
 -->
 
 * Returns: {string} the current prompt string
@@ -544,6 +546,9 @@ the current position of the cursor down.
 <!-- YAML
 added: v0.1.98
 changes:
+  - version: v15.14.0
+    pr-url: https://github.com/nodejs/node/pull/37932
+    description: The `signal` option is supported now.
   - version: v15.8.0
     pr-url: https://github.com/nodejs/node/pull/33662
     description: The `history` option is supported now.
@@ -601,6 +606,8 @@ changes:
     **Default:** `500`.
   * `tabSize` {integer} The number of spaces a tab is equal to (minimum 1).
     **Default:** `8`.
+  * `signal` {AbortSignal} Allows closing the interface using an AbortSignal.
+    Aborting the signal will internally call `close` on the interface.
 * Returns: {readline.Interface}
 
 The `readline.createInterface()` method creates a new `readline.Interface`
@@ -627,6 +634,17 @@ If `terminal` is `true` for this instance then the `output` stream will get
 the best compatibility if it defines an `output.columns` property and emits
 a `'resize'` event on the `output` if or when the columns ever change
 ([`process.stdout`][] does this automatically when it is a TTY).
+
+When creating a `readline.Interface` using `stdin` as input, the program
+will not terminate until it receives `EOF` (<kbd>Ctrl</kbd>+<kbd>D</kbd> on
+Linux/macOS, <kbd>Ctrl</kbd>+<kbd>Z</kbd> followed by <kbd>Return</kbd> on
+Windows).
+If you want your application to exit without waiting for user input, you can
+[`unref()`][] the standard input stream:
+
+```js
+process.stdin.unref();
+```
 
 ### Use of the `completer` function
 
@@ -955,11 +973,12 @@ const { createInterface } = require('readline');
 [TTY]: tty.md
 [TTY keybindings]: #readline_tty_keybindings
 [Writable]: stream.md#stream_writable_streams
-[`'SIGCONT'`]: readline.md#readline_event_sigcont
-[`'SIGTSTP'`]: readline.md#readline_event_sigtstp
+[`'SIGCONT'`]: #readline_event_sigcont
+[`'SIGTSTP'`]: #readline_event_sigtstp
 [`'line'`]: #readline_event_line
 [`fs.ReadStream`]: fs.md#fs_class_fs_readstream
 [`process.stdin`]: process.md#process_process_stdin
 [`process.stdout`]: process.md#process_process_stdout
 [`rl.close()`]: #readline_rl_close
+[`unref()`]: net.md#net_socket_unref
 [reading files]: #readline_example_read_file_stream_line_by_line

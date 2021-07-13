@@ -10,7 +10,7 @@ The `crypto` module provides cryptographic functionality that includes a set of
 wrappers for OpenSSL's hash, HMAC, cipher, decipher, sign, and verify functions.
 
 ```mjs
-import { createHmac } from 'crypto';
+const { createHmac } = await import('crypto');
 
 const secret = 'abcdefg';
 const hash = createHmac('sha256', secret)
@@ -162,7 +162,9 @@ changes:
   `false` otherwise.
 
 ```mjs
+import { Buffer } from 'buffer';
 const { Certificate } = await import('crypto');
+
 const spkac = getSpkacSomehow();
 console.log(Certificate.verifySpkac(Buffer.from(spkac)));
 // Prints: true or false
@@ -170,6 +172,8 @@ console.log(Certificate.verifySpkac(Buffer.from(spkac)));
 
 ```cjs
 const { Certificate } = require('crypto');
+const { Buffer } = require('buffer');
+
 const spkac = getSpkacSomehow();
 console.log(Certificate.verifySpkac(Buffer.from(spkac)));
 // Prints: true or false
@@ -268,7 +272,9 @@ added: v0.11.8
   `false` otherwise.
 
 ```mjs
+import { Buffer } from 'buffer';
 const { Certificate } = await import('crypto');
+
 const cert = Certificate();
 const spkac = getSpkacSomehow();
 console.log(cert.verifySpkac(Buffer.from(spkac)));
@@ -277,6 +283,8 @@ console.log(cert.verifySpkac(Buffer.from(spkac)));
 
 ```cjs
 const { Certificate } = require('crypto');
+const { Buffer } = require('buffer');
+
 const cert = Certificate();
 const spkac = getSpkacSomehow();
 console.log(cert.verifySpkac(Buffer.from(spkac)));
@@ -385,7 +393,7 @@ import {
 const {
   scrypt,
   randomFill,
-  createCipheriv,
+  createCipheriv
 } = await import('crypto');
 
 const algorithm = 'aes-192-cbc';
@@ -456,7 +464,7 @@ Example: Using the [`cipher.update()`][] and [`cipher.final()`][] methods:
 const {
   scrypt,
   randomFill,
-  createCipheriv,
+  createCipheriv
 } = await import('crypto');
 
 const algorithm = 'aes-192-cbc';
@@ -626,9 +634,10 @@ directly using the `new` keyword.
 Example: Using `Decipher` objects as streams:
 
 ```mjs
+import { Buffer } from 'buffer';
 const {
   scryptSync,
-  createDecipheriv,
+  createDecipheriv
 } = await import('crypto');
 
 const algorithm = 'aes-192-cbc';
@@ -665,6 +674,7 @@ const {
   scryptSync,
   createDecipheriv,
 } = require('crypto');
+const { Buffer } = require('buffer');
 
 const algorithm = 'aes-192-cbc';
 const password = 'Password used to generate key';
@@ -702,10 +712,10 @@ import {
   createReadStream,
   createWriteStream,
 } from 'fs';
-
+import { Buffer } from 'buffer';
 const {
   scryptSync,
-  createDecipheriv,
+  createDecipheriv
 } = await import('crypto');
 
 const algorithm = 'aes-192-cbc';
@@ -728,11 +738,11 @@ const {
   createReadStream,
   createWriteStream,
 } = require('fs');
-
 const {
   scryptSync,
   createDecipheriv,
 } = require('crypto');
+const { Buffer } = require('buffer');
 
 const algorithm = 'aes-192-cbc';
 const password = 'Password used to generate key';
@@ -752,9 +762,10 @@ input.pipe(decipher).pipe(output);
 Example: Using the [`decipher.update()`][] and [`decipher.final()`][] methods:
 
 ```mjs
+import { Buffer } from 'buffer';
 const {
   scryptSync,
-  createDecipheriv,
+  createDecipheriv
 } = await import('crypto');
 
 const algorithm = 'aes-192-cbc';
@@ -780,6 +791,7 @@ const {
   scryptSync,
   createDecipheriv,
 } = require('crypto');
+const { Buffer } = require('buffer');
 
 const algorithm = 'aes-192-cbc';
 const password = 'Password used to generate key';
@@ -942,7 +954,7 @@ Instances of the `DiffieHellman` class can be created using the
 import assert from 'assert';
 
 const {
-  createDiffieHellman,
+  createDiffieHellman
 } = await import('crypto');
 
 // Generate Alice's keys...
@@ -1114,8 +1126,10 @@ module):
 added: v0.7.5
 -->
 
-The `DiffieHellmanGroup` class takes a well-known modp group as its argument but
-otherwise works the same as `DiffieHellman`.
+The `DiffieHellmanGroup` class takes a well-known modp group as its argument.
+It works the same as `DiffieHellman`, except that it does not allow changing
+its keys after creation. In other words, it does not implement `setPublicKey()`
+or `setPrivateKey()` methods.
 
 ```mjs
 const { createDiffieHellmanGroup } = await import('crypto');
@@ -1157,7 +1171,7 @@ Instances of the `ECDH` class can be created using the
 import assert from 'assert';
 
 const {
-  createECDH,
+  createECDH
 } = await import('crypto');
 
 // Generate Alice's keys...
@@ -1232,7 +1246,7 @@ Example (uncompressing a key):
 ```mjs
 const {
   createECDH,
-  ECDH,
+  ECDH
 } = await import('crypto');
 
 const ecdh = createECDH('secp256k1');
@@ -1398,8 +1412,8 @@ Example (obtaining a shared secret):
 ```mjs
 const {
   createECDH,
-  createHash,
-} = await crypto('crypto');
+  createHash
+} = await import('crypto');
 
 const alice = createECDH('secp256k1');
 const bob = createECDH('secp256k1');
@@ -1471,7 +1485,7 @@ Example: Using `Hash` objects as streams:
 
 ```mjs
 const {
-  createHash,
+  createHash
 } = await import('crypto');
 
 const hash = createHash('sha256');
@@ -1516,40 +1530,33 @@ hash.end();
 Example: Using `Hash` and piped streams:
 
 ```mjs
-const {
-  createReadStream,
-} = require('fs');
+import { createReadStream } from 'fs';
+import { stdout } from 'process';
+const { createHash } = await import('crypto');
 
-const {
-  createHash,
-} = await import('crypto');
 const hash = createHash('sha256');
 
 const input = createReadStream('test.js');
-input.pipe(hash).setEncoding('hex').pipe(process.stdout);
+input.pipe(hash).setEncoding('hex').pipe(stdout);
 ```
 
 ```cjs
-const {
-  createReadStream,
-} = require('fs');
-
-const {
-  createHash,
-} = require('crypto');
+const { createReadStream } = require('fs');
+const { createHash } = require('crypto');
+const { stdout } = require('process');
 
 const hash = createHash('sha256');
 
 const input = createReadStream('test.js');
-input.pipe(hash).setEncoding('hex').pipe(process.stdout);
+input.pipe(hash).setEncoding('hex').pipe(stdout);
 ```
 
 Example: Using the [`hash.update()`][] and [`hash.digest()`][] methods:
 
 ```mjs
 const {
-  createHash,
-} = require('crypto');
+  createHash
+} = await import('crypto');
 
 const hash = createHash('sha256');
 
@@ -1593,8 +1600,8 @@ its [`hash.digest()`][] method has been called.
 ```mjs
 // Calculate a rolling hash.
 const {
-  createHash,
-} = require('crypto');
+  createHash
+} = await import('crypto');
 
 const hash = createHash('sha256');
 
@@ -1688,8 +1695,8 @@ Example: Using `Hmac` objects as streams:
 
 ```mjs
 const {
-  createHmac,
-} = require('crypto');
+  createHmac
+} = await import('crypto');
 
 const hmac = createHmac('sha256', 'a secret');
 
@@ -1734,37 +1741,37 @@ Example: Using `Hmac` and piped streams:
 
 ```mjs
 import { createReadStream } from 'fs';
-
+import { stdout } from 'process';
 const {
-  createHmac,
+  createHmac
 } = await import('crypto');
 
 const hmac = createHmac('sha256', 'a secret');
 
 const input = createReadStream('test.js');
-input.pipe(hmac).pipe(process.stdout);
+input.pipe(hmac).pipe(stdout);
 ```
 
 ```cjs
 const {
   createReadStream,
 } = require('fs');
-
 const {
   createHmac,
 } = require('crypto');
+const { stdout } = require('process');
 
 const hmac = createHmac('sha256', 'a secret');
 
 const input = createReadStream('test.js');
-input.pipe(hmac).pipe(process.stdout);
+input.pipe(hmac).pipe(stdout);
 ```
 
 Example: Using the [`hmac.update()`][] and [`hmac.digest()`][] methods:
 
 ```mjs
 const {
-  createHmac,
+  createHmac
 } = await import('crypto');
 
 const hmac = createHmac('sha256', 'a secret');
@@ -1863,12 +1870,8 @@ added: v15.0.0
 Example: Converting a `CryptoKey` instance to a `KeyObject`:
 
 ```mjs
-const {
-  webcrypto: {
-    subtle,
-  },
-  KeyObject,
-} = await import('crypto');
+const { webcrypto, KeyObject } = await import('crypto');
+const { subtle } = webcrypto;
 
 const key = await subtle.generateKey({
   name: 'HMAC',
@@ -2058,7 +2061,7 @@ Example: Using `Sign` and [`Verify`][] objects as streams:
 const {
   generateKeyPairSync,
   createSign,
-  createVerify,
+  createVerify
 } = await import('crypto');
 
 const { privateKey, publicKey } = generateKeyPairSync('ec', {
@@ -2106,7 +2109,7 @@ Example: Using the [`sign.update()`][] and [`verify.update()`][] methods:
 const {
   generateKeyPairSync,
   createSign,
-  createVerify,
+  createVerify
 } = await import('crypto');
 
 const { privateKey, publicKey } = generateKeyPairSync('rsa', {
@@ -3026,12 +3029,12 @@ Example: generating the sha256 sum of a file
 import {
   createReadStream
 } from 'fs';
-
+import { argv } from 'process';
 const {
-  createHash,
+  createHash
 } = await import('crypto');
 
-const filename = process.argv[2];
+const filename = argv[2];
 
 const hash = createHash('sha256');
 
@@ -3052,12 +3055,12 @@ input.on('readable', () => {
 const {
   createReadStream,
 } = require('fs');
-
 const {
   createHash,
 } = require('crypto');
+const { argv } = require('process');
 
-const filename = process.argv[2];
+const filename = argv[2];
 
 const hash = createHash('sha256');
 
@@ -3112,12 +3115,12 @@ Example: generating the sha256 HMAC of a file
 import {
   createReadStream
 } from 'fs';
-
+import { argv } from 'process';
 const {
-  createHmac,
+  createHmac
 } = await import('crypto');
 
-const filename = process.argv[2];
+const filename = argv[2];
 
 const hmac = createHmac('sha256', 'a secret');
 
@@ -3138,12 +3141,12 @@ input.on('readable', () => {
 const {
   createReadStream,
 } = require('fs');
-
 const {
   createHmac,
 } = require('crypto');
+const { argv } = require('process');
 
-const filename = process.argv[2];
+const filename = argv[2];
 
 const hmac = createHmac('sha256', 'a secret');
 
@@ -3336,7 +3339,7 @@ Asynchronously generates a new random secret key of the given `length`. The
 
 ```mjs
 const {
-  generateKey,
+  generateKey
 } = await import('crypto');
 
 generateKey('hmac', { length: 64 }, (err, key) => {
@@ -3408,7 +3411,7 @@ It is recommended to encode public keys as `'spki'` and private keys as
 
 ```mjs
 const {
-  generateKeyPair,
+  generateKeyPair
 } = await import('crypto');
 
 generateKeyPair('rsa', {
@@ -3505,7 +3508,7 @@ and to keep the passphrase confidential.
 
 ```mjs
 const {
-  generateKeyPairSync,
+  generateKeyPairSync
 } = await import('crypto');
 
 const {
@@ -3573,7 +3576,7 @@ Synchronously generates a new random secret key of the given `length`. The
 
 ```mjs
 const {
-  generateKeySync,
+  generateKeySync
 } = await import('crypto');
 
 const key = generateKeySync('hmac', 64);
@@ -3605,7 +3608,7 @@ added: v15.8.0
   * `err` {Error}
   * `prime` {ArrayBuffer|bigint}
 
-Generates a pseudo-random prime of `size` bits.
+Generates a pseudorandom prime of `size` bits.
 
 If `options.safe` is `true`, the prime will be a safe prime -- that is,
 `(prime - 1) / 2` will also be a prime.
@@ -3645,7 +3648,7 @@ added: v15.8.0
     as a `bigint`.
 * Returns: {ArrayBuffer|bigint}
 
-Generates a pseudo-random prime of `size` bits.
+Generates a pseudorandom prime of `size` bits.
 
 If `options.safe` is `true`, the prime will be a safe prime -- that is,
 `(prime - 1) / 2` will also be a prime.
@@ -3697,7 +3700,7 @@ Returns information about a given cipher.
 Some ciphers accept variable length keys and initialization vectors. By default,
 the `crypto.getCipherInfo()` method will return the default values for these
 ciphers. To test if a given key length or iv length is acceptable for given
-cipher, use the `keyLenth` and `ivLenth` options. If the given values are
+cipher, use the `keyLength` and `ivLength` options. If the given values are
 unacceptable, `undefined` will be returned.
 
 ### `crypto.getCiphers()`
@@ -3710,7 +3713,7 @@ added: v0.9.3
 
 ```mjs
 const {
-  getCiphers,
+  getCiphers
 } = await import('crypto');
 
 console.log(getCiphers()); // ['aes-128-cbc', 'aes-128-ccm', ...]
@@ -3733,7 +3736,7 @@ added: v2.3.0
 
 ```mjs
 const {
-  getCurves,
+  getCurves
 } = await import('crypto');
 
 console.log(getCurves()); // ['Oakley-EC2N-3', 'Oakley-EC2N-4', ...]
@@ -3770,7 +3773,7 @@ Example (obtaining a shared secret):
 
 ```mjs
 const {
-  getDiffieHellman,
+  getDiffieHellman
 } = await import('crypto');
 const alice = getDiffieHellman('modp14');
 const bob = getDiffieHellman('modp14');
@@ -3822,7 +3825,7 @@ added: v0.9.3
 
 ```mjs
 const {
-  getHashes,
+  getHashes
 } = await import('crypto');
 
 console.log(getHashes()); // ['DSA', 'DSA-SHA', 'DSA-SHA1', ...]
@@ -3863,11 +3866,12 @@ The supplied `callback` function is called with two arguments: `err` and
 `derivedKey`. If an errors occurs while deriving the key, `err` will be set;
 otherwise `err` will be `null`. The successfully generated `derivedKey` will
 be passed to the callback as an {ArrayBuffer}. An error will be thrown if any
-of the input aguments specify invalid values or types.
+of the input arguments specify invalid values or types.
 
 ```mjs
+import { Buffer } from 'buffer';
 const {
-  hkdf,
+  hkdf
 } = await import('crypto');
 
 hkdf('sha512', 'key', 'salt', 'info', 64, (err, derivedKey) => {
@@ -3880,6 +3884,7 @@ hkdf('sha512', 'key', 'salt', 'info', 64, (err, derivedKey) => {
 const {
   hkdf,
 } = require('crypto');
+const { Buffer } = require('buffer');
 
 hkdf('sha512', 'key', 'salt', 'info', 64, (err, derivedKey) => {
   if (err) throw err;
@@ -3911,12 +3916,13 @@ given `key`, `salt` and `info` are used with the `digest` to derive a key of
 
 The successfully generated `derivedKey` will be returned as an {ArrayBuffer}.
 
-An error will be thrown if any of the input aguments specify invalid values or
+An error will be thrown if any of the input arguments specify invalid values or
 types, or if the derived key cannot be generated.
 
 ```mjs
+import { Buffer } from 'buffer';
 const {
-  hkdfSync,
+  hkdfSync
 } = await import('crypto');
 
 const derivedKey = hkdfSync('sha512', 'key', 'salt', 'info', 64);
@@ -3927,6 +3933,7 @@ console.log(Buffer.from(derivedKey).toString('hex'));  // '24156e2...5391653'
 const {
   hkdfSync,
 } = require('crypto');
+const { Buffer } = require('buffer');
 
 const derivedKey = hkdfSync('sha512', 'key', 'salt', 'info', 64);
 console.log(Buffer.from(derivedKey).toString('hex'));  // '24156e2...5391653'
@@ -3992,7 +3999,7 @@ When passing strings for `password` or `salt`, please consider
 
 ```mjs
 const {
-  pbkdf2,
+  pbkdf2
 } = await import('crypto');
 
 pbkdf2('secret', 'salt', 100000, 64, 'sha512', (err, derivedKey) => {
@@ -4017,7 +4024,7 @@ The `crypto.DEFAULT_ENCODING` property can be used to change the way the
 deprecated and use should be avoided.
 
 ```mjs
-const crypto = await import('crypto');
+import crypto from 'crypto';
 crypto.DEFAULT_ENCODING = 'hex';
 crypto.pbkdf2('secret', 'salt', 100000, 512, 'sha512', (err, derivedKey) => {
   if (err) throw err;
@@ -4089,7 +4096,7 @@ When passing strings for `password` or `salt`, please consider
 
 ```mjs
 const {
-  pbkdf2Sync,
+  pbkdf2Sync
 } = await import('crypto');
 
 const key = pbkdf2Sync('secret', 'salt', 100000, 64, 'sha512');
@@ -4110,7 +4117,7 @@ The `crypto.DEFAULT_ENCODING` property may be used to change the way the
 should be avoided.
 
 ```mjs
-const crypto = await import('crypto');
+import crypto from 'crypto';
 crypto.DEFAULT_ENCODING = 'hex';
 const key = crypto.pbkdf2Sync('secret', 'salt', 100000, 512, 'sha512');
 console.log(key);  // '3745e48...aa39b34'
@@ -4316,7 +4323,7 @@ changes:
   * `buf` {Buffer}
 * Returns: {Buffer} if the `callback` function is not provided.
 
-Generates cryptographically strong pseudo-random data. The `size` argument
+Generates cryptographically strong pseudorandom data. The `size` argument
 is a number indicating the number of bytes to generate.
 
 If a `callback` function is provided, the bytes are generated asynchronously
@@ -4327,7 +4334,7 @@ If an error occurs, `err` will be an `Error` object; otherwise it is `null`. The
 ```mjs
 // Asynchronous
 const {
-  randomBytes,
+  randomBytes
 } = await import('crypto');
 
 randomBytes(256, (err, buf) => {
@@ -4355,7 +4362,7 @@ there is a problem generating the bytes.
 ```mjs
 // Synchronous
 const {
-  randomBytes,
+  randomBytes
 } = await import('crypto');
 
 const buf = randomBytes(256);
@@ -4411,9 +4418,8 @@ changes:
 Synchronous version of [`crypto.randomFill()`][].
 
 ```mjs
-const {
-  randomFillSync,
-} = await import('crypto');
+import { Buffer } from 'buffer';
+const { randomFillSync } = await import('crypto');
 
 const buf = Buffer.alloc(10);
 console.log(randomFillSync(buf).toString('hex'));
@@ -4427,9 +4433,8 @@ console.log(buf.toString('hex'));
 ```
 
 ```cjs
-const {
-  randomFillSync,
-} = require('crypto');
+const { randomFillSync } = require('crypto');
+const { Buffer } = require('buffer');
 
 const buf = Buffer.alloc(10);
 console.log(randomFillSync(buf).toString('hex'));
@@ -4446,45 +4451,35 @@ Any `ArrayBuffer`, `TypedArray` or `DataView` instance may be passed as
 `buffer`.
 
 ```mjs
-const {
-  randomFillSync,
-} = await import('crypto');
+import { Buffer } from 'buffer';
+const { randomFillSync } = await import('crypto');
 
 const a = new Uint32Array(10);
 console.log(Buffer.from(randomFillSync(a).buffer,
                         a.byteOffset, a.byteLength).toString('hex'));
 
-const b = new Float64Array(10);
+const b = new DataView(new ArrayBuffer(10));
 console.log(Buffer.from(randomFillSync(b).buffer,
                         b.byteOffset, b.byteLength).toString('hex'));
 
-const c = new DataView(new ArrayBuffer(10));
-console.log(Buffer.from(randomFillSync(c).buffer,
-                        c.byteOffset, c.byteLength).toString('hex'));
-
-const d = new ArrayBuffer(10);
-console.log(Buffer.from(randomFillSync(d)).toString('hex'));
+const c = new ArrayBuffer(10);
+console.log(Buffer.from(randomFillSync(c)).toString('hex'));
 ```
 
 ```cjs
-const {
-  randomFillSync,
-} = require('crypto');
+const { randomFillSync } = require('crypto');
+const { Buffer } = require('buffer');
 
 const a = new Uint32Array(10);
 console.log(Buffer.from(randomFillSync(a).buffer,
                         a.byteOffset, a.byteLength).toString('hex'));
 
-const b = new Float64Array(10);
+const b = new DataView(new ArrayBuffer(10));
 console.log(Buffer.from(randomFillSync(b).buffer,
                         b.byteOffset, b.byteLength).toString('hex'));
 
-const c = new DataView(new ArrayBuffer(10));
-console.log(Buffer.from(randomFillSync(c).buffer,
-                        c.byteOffset, c.byteLength).toString('hex'));
-
-const d = new ArrayBuffer(10);
-console.log(Buffer.from(randomFillSync(d)).toString('hex'));
+const c = new ArrayBuffer(10);
+console.log(Buffer.from(randomFillSync(c)).toString('hex'));
 ```
 
 ### `crypto.randomFill(buffer[, offset][, size], callback)`
@@ -4512,9 +4507,8 @@ requires that a callback is passed in.
 If the `callback` function is not provided, an error will be thrown.
 
 ```mjs
-const {
-  randomFill,
-} = await import('crypto');
+import { Buffer } from 'buffer';
+const { randomFill } = await import('crypto');
 
 const buf = Buffer.alloc(10);
 randomFill(buf, (err, buf) => {
@@ -4535,9 +4529,8 @@ randomFill(buf, 5, 5, (err, buf) => {
 ```
 
 ```cjs
-const {
-  randomFill,
-} = require('crypto');
+const { randomFill } = require('crypto');
+const { Buffer } = require('buffer');
 
 const buf = Buffer.alloc(10);
 randomFill(buf, (err, buf) => {
@@ -4557,13 +4550,18 @@ randomFill(buf, 5, 5, (err, buf) => {
 });
 ```
 
-Any `ArrayBuffer` `TypedArray` or `DataView` instance may be passed as
+Any `ArrayBuffer`, `TypedArray`, or `DataView` instance may be passed as
 `buffer`.
 
+While this includes instances of `Float32Array` and `Float64Array`, this
+function should not be used to generate random floating-point numbers. The
+result may contain `+Infinity`, `-Infinity`, and `NaN`, and even if the array
+contains finite numbers only, they are not drawn from a uniform random
+distribution and have no meaningful lower or upper bounds.
+
 ```mjs
-const {
-  randomFill,
-} = await import('crypto');
+import { Buffer } from 'buffer';
+const { randomFill } = await import('crypto');
 
 const a = new Uint32Array(10);
 randomFill(a, (err, buf) => {
@@ -4572,31 +4570,23 @@ randomFill(a, (err, buf) => {
     .toString('hex'));
 });
 
-const b = new Float64Array(10);
+const b = new DataView(new ArrayBuffer(10));
 randomFill(b, (err, buf) => {
   if (err) throw err;
   console.log(Buffer.from(buf.buffer, buf.byteOffset, buf.byteLength)
     .toString('hex'));
 });
 
-const c = new DataView(new ArrayBuffer(10));
+const c = new ArrayBuffer(10);
 randomFill(c, (err, buf) => {
-  if (err) throw err;
-  console.log(Buffer.from(buf.buffer, buf.byteOffset, buf.byteLength)
-    .toString('hex'));
-});
-
-const d = new ArrayBuffer(10);
-randomFill(d, (err, buf) => {
   if (err) throw err;
   console.log(Buffer.from(buf).toString('hex'));
 });
 ```
 
 ```cjs
-const {
-  randomFill,
-} = require('crypto');
+const { randomFill } = require('crypto');
+const { Buffer } = require('buffer');
 
 const a = new Uint32Array(10);
 randomFill(a, (err, buf) => {
@@ -4605,22 +4595,15 @@ randomFill(a, (err, buf) => {
     .toString('hex'));
 });
 
-const b = new Float64Array(10);
+const b = new DataView(new ArrayBuffer(10));
 randomFill(b, (err, buf) => {
   if (err) throw err;
   console.log(Buffer.from(buf.buffer, buf.byteOffset, buf.byteLength)
     .toString('hex'));
 });
 
-const c = new DataView(new ArrayBuffer(10));
+const c = new ArrayBuffer(10);
 randomFill(c, (err, buf) => {
-  if (err) throw err;
-  console.log(Buffer.from(buf.buffer, buf.byteOffset, buf.byteLength)
-    .toString('hex'));
-});
-
-const d = new ArrayBuffer(10);
-randomFill(d, (err, buf) => {
   if (err) throw err;
   console.log(Buffer.from(buf).toString('hex'));
 });
@@ -4658,7 +4641,7 @@ generated synchronously.
 ```mjs
 // Asynchronous
 const {
-  randomInt,
+  randomInt
 } = await import('crypto');
 
 randomInt(3, (err, n) => {
@@ -4682,7 +4665,7 @@ randomInt(3, (err, n) => {
 ```mjs
 // Synchronous
 const {
-  randomInt,
+  randomInt
 } = await import('crypto');
 
 const n = randomInt(3);
@@ -4702,7 +4685,7 @@ console.log(`Random number chosen from (0, 1, 2): ${n}`);
 ```mjs
 // With `min` argument
 const {
-  randomInt,
+  randomInt
 } = await import('crypto');
 
 const n = randomInt(1, 7);
@@ -4721,7 +4704,9 @@ console.log(`The dice rolled: ${n}`);
 
 ### `crypto.randomUUID([options])`
 <!-- YAML
-added: v15.6.0
+added:
+  - v15.6.0
+  - v14.17.0
 -->
 
 * `options` {Object}
@@ -4732,7 +4717,8 @@ added: v15.6.0
     **Default:** `false`.
 * Returns: {string}
 
-Generates a random [RFC 4122][] Version 4 UUID.
+Generates a random [RFC 4122][] Version 4 UUID. The UUID is generated using a
+cryptographic pseudorandom number generator.
 
 ### `crypto.scrypt(password, salt, keylen[, options], callback)`
 <!-- YAML
@@ -4789,7 +4775,7 @@ or types.
 
 ```mjs
 const {
-  scrypt,
+  scrypt
 } = await import('crypto');
 
 // Using the factory defaults.
@@ -4869,7 +4855,7 @@ or types.
 
 ```mjs
 const {
-  scryptSync,
+  scryptSync
 } = await import('crypto');
 // Using the factory defaults.
 
@@ -5116,10 +5102,10 @@ When passing strings to cryptographic APIs, consider the following factors.
 
 * Not all byte sequences are valid UTF-8 strings. Therefore, when a byte
   sequence of length `n` is derived from a string, its entropy is generally
-  lower than the entropy of a random or pseudo-random `n` byte sequence.
+  lower than the entropy of a random or pseudorandom `n` byte sequence.
   For example, no UTF-8 string will result in the byte sequence `c0 af`. Secret
-  keys should almost exclusively be random or pseudo-random byte sequences.
-* Similarly, when converting random or pseudo-random byte sequences to UTF-8
+  keys should almost exclusively be random or pseudorandom byte sequences.
+* Similarly, when converting random or pseudorandom byte sequences to UTF-8
   strings, subsequences that do not represent valid code points may be replaced
   by the Unicode replacement character (`U+FFFD`). The byte representation of
   the resulting Unicode string may, therefore, not be equal to the byte sequence
@@ -5134,7 +5120,7 @@ When passing strings to cryptographic APIs, consider the following factors.
   ```
 
   The outputs of ciphers, hash functions, signature algorithms, and key
-  derivation functions are pseudo-random byte sequences and should not be
+  derivation functions are pseudorandom byte sequences and should not be
   used as Unicode strings.
 * When strings are obtained from user input, some Unicode characters can be
   represented in multiple equivalent ways that result in different byte
@@ -5218,17 +5204,18 @@ mode must adhere to certain restrictions when using the cipher API:
   `plaintextLength + authTagLength`. Node.js does not include the authentication
   tag, so the ciphertext length is always `plaintextLength`.
   This is not necessary if no AAD is used.
-* As CCM processes the whole message at once, `update()` can only be called
+* As CCM processes the whole message at once, `update()` must be called exactly
   once.
 * Even though calling `update()` is sufficient to encrypt/decrypt the message,
   applications *must* call `final()` to compute or verify the
   authentication tag.
 
 ```mjs
+import { Buffer } from 'buffer';
 const {
   createCipheriv,
   createDecipheriv,
-  randomBytes,
+  randomBytes
 } = await import('crypto');
 
 const key = 'keykeykeykeykeykeykeykey';
@@ -5274,6 +5261,7 @@ const {
   createDecipheriv,
   randomBytes,
 } = require('crypto');
+const { Buffer } = require('buffer');
 
 const key = 'keykeykeykeykeykeykeykey';
 const nonce = randomBytes(12);
@@ -5654,7 +5642,6 @@ See the [list of SSL OP Flags][] for details.
 [AEAD algorithms]: https://en.wikipedia.org/wiki/Authenticated_encryption
 [CCM mode]: #crypto_ccm_mode
 [Caveats]: #crypto_support_for_weak_or_compromised_algorithms
-[caveats when using strings as inputs to cryptographic APIs]: #crypto_using_strings_as_inputs_to_cryptographic_apis
 [Crypto constants]: #crypto_crypto_constants_1
 [HTML 5.2]: https://www.w3.org/TR/html52/changes.html#features-removed
 [HTML5's `keygen` element]: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/keygen
@@ -5724,6 +5711,7 @@ See the [list of SSL OP Flags][] for details.
 [`util.promisify()`]: util.md#util_util_promisify_original
 [`verify.update()`]: #crypto_verify_update_data_inputencoding
 [`verify.verify()`]: #crypto_verify_verify_object_signature_signatureencoding
+[caveats when using strings as inputs to cryptographic APIs]: #crypto_using_strings_as_inputs_to_cryptographic_apis
 [certificate object]: tls.md#tls_certificate_object
 [encoding]: buffer.md#buffer_buffers_and_character_encodings
 [initialization vector]: https://en.wikipedia.org/wiki/Initialization_vector

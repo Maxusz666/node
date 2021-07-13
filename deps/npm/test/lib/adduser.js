@@ -1,5 +1,4 @@
-const requireInject = require('require-inject')
-const { test } = require('tap')
+const t = require('tap')
 const { getCredentialsByURI, setCredentialsByURI } =
   require('@npmcli/config').prototype
 
@@ -26,7 +25,6 @@ const authDummy = (npm, options) => {
       username: 'u',
       password: 'p',
       email: 'u@npmjs.org',
-      alwaysAuth: false,
     },
   })
 }
@@ -66,7 +64,7 @@ const npm = {
   },
 }
 
-const AddUser = requireInject('../../lib/adduser.js', {
+const AddUser = t.mock('../../lib/adduser.js', {
   npmlog: {
     disableProgress: () => null,
     notice: (_, msg) => {
@@ -78,13 +76,13 @@ const AddUser = requireInject('../../lib/adduser.js', {
 
 const adduser = new AddUser(npm)
 
-test('usage', (t) => {
+t.test('usage', (t) => {
   t.match(adduser.usage, 'adduser', 'usage has command name in it')
   t.end()
 })
-test('simple login', (t) => {
+t.test('simple login', (t) => {
   adduser.exec([], (err) => {
-    t.ifError(err, 'npm adduser')
+    t.error(err, 'npm adduser')
 
     t.equal(
       registryOutput,
@@ -92,29 +90,31 @@ test('simple login', (t) => {
       'should have correct message result'
     )
 
-    t.deepEqual(
+    t.same(
       deletedConfig,
       {
         _token: 'user',
         _password: 'user',
         username: 'user',
-        email: 'user',
         _auth: 'user',
         _authtoken: 'user',
+        '-authtoken': 'user',
         _authToken: 'user',
-        '//registry.npmjs.org/:-authtoken': undefined,
+        '//registry.npmjs.org/:-authtoken': 'user',
         '//registry.npmjs.org/:_authToken': 'user',
+        '//registry.npmjs.org/:_authtoken': 'user',
+        '//registry.npmjs.org/:always-auth': 'user',
+        '//registry.npmjs.org/:email': 'user',
       },
       'should delete token in user config'
     )
 
-    t.deepEqual(
+    t.same(
       setConfig,
       {
         '//registry.npmjs.org/:_password': { value: 'cA==', where: 'user' },
         '//registry.npmjs.org/:username': { value: 'u', where: 'user' },
-        '//registry.npmjs.org/:email': { value: 'u@npmjs.org', where: 'user' },
-        '//registry.npmjs.org/:always-auth': { value: false, where: 'user' },
+        email: { value: 'u@npmjs.org', where: 'user' },
       },
       'should set expected user configs'
     )
@@ -133,7 +133,7 @@ test('simple login', (t) => {
   })
 })
 
-test('bad auth type', (t) => {
+t.test('bad auth type', (t) => {
   _flatOptions.authType = 'foo'
 
   adduser.exec([], (err) => {
@@ -151,13 +151,13 @@ test('bad auth type', (t) => {
   })
 })
 
-test('scoped login', (t) => {
+t.test('scoped login', (t) => {
   _flatOptions.scope = '@myscope'
 
   adduser.exec([], (err) => {
-    t.ifError(err, 'npm adduser')
+    t.error(err, 'npm adduser')
 
-    t.deepEqual(
+    t.same(
       setConfig['@myscope:registry'],
       { value: 'https://registry.npmjs.org/', where: 'user' },
       'should set scoped registry config'
@@ -171,14 +171,14 @@ test('scoped login', (t) => {
   })
 })
 
-test('scoped login with valid scoped registry config', (t) => {
+t.test('scoped login with valid scoped registry config', (t) => {
   _flatOptions['@myscope:registry'] = 'https://diff-registry.npmjs.com/'
   _flatOptions.scope = '@myscope'
 
   adduser.exec([], (err) => {
-    t.ifError(err, 'npm adduser')
+    t.error(err, 'npm adduser')
 
-    t.deepEqual(
+    t.same(
       setConfig['@myscope:registry'],
       { value: 'https://diff-registry.npmjs.com/', where: 'user' },
       'should keep scoped registry config'
@@ -193,7 +193,7 @@ test('scoped login with valid scoped registry config', (t) => {
   })
 })
 
-test('save config failure', (t) => {
+t.test('save config failure', (t) => {
   failSave = true
 
   adduser.exec([], (err) => {

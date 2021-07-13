@@ -2,6 +2,7 @@
 'use strict';
 
 const common = require('../common');
+const { inspect } = require('util');
 
 const { ok, strictEqual, throws } = require('assert');
 
@@ -92,7 +93,7 @@ const { ok, strictEqual, throws } = require('assert');
     NaN,
     true,
     'AbortController',
-    Object.create(AbortController.prototype)
+    Object.create(AbortController.prototype),
   ];
   for (const badController of badAbortControllers) {
     throws(
@@ -123,7 +124,7 @@ const { ok, strictEqual, throws } = require('assert');
     NaN,
     true,
     'AbortSignal',
-    Object.create(AbortSignal.prototype)
+    Object.create(AbortSignal.prototype),
   ];
   for (const badSignal of badAbortSignals) {
     throws(
@@ -131,4 +132,12 @@ const { ok, strictEqual, throws } = require('assert');
       { code: 'ERR_INVALID_THIS', name: 'TypeError' }
     );
   }
+}
+
+{
+  const ac = new AbortController();
+  strictEqual(inspect(ac, { depth: 1 }),
+              'AbortController { signal: [AbortSignal] }');
+  strictEqual(inspect(ac, { depth: null }),
+              'AbortController { signal: AbortSignal { aborted: false } }');
 }

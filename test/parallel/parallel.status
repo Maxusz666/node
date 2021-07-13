@@ -13,6 +13,8 @@ test-timers-immediate-queue: PASS,FLAKY
 test-worker-memory: PASS,FLAKY
 
 [$system==linux]
+# https://github.com/nodejs/node/issues/39368
+test-domain-error-types: PASS,FLAKY
 
 [$system==macos]
 
@@ -55,5 +57,3 @@ test-tls-env-extra-ca: SKIP
 test-dgram-error-message-address: SKIP
 # https://github.com/nodejs/node/issues/36929
 test-crypto-secure-heap: SKIP
-# https://github.com/nodejs/node/issues/36925
-test-fs-read-type: SKIP

@@ -24,7 +24,7 @@
 #include "memory_tracker-inl.h"
 #include "node_buffer.h"
 #include "node_external_reference.h"
-#include "node_process.h"
+#include "node_process-inl.h"
 #include "node_stat_watcher.h"
 #include "util-inl.h"
 
@@ -71,7 +71,6 @@ using v8::ObjectTemplate;
 using v8::Promise;
 using v8::String;
 using v8::Symbol;
-using v8::Uint32;
 using v8::Undefined;
 using v8::Value;
 
@@ -1836,8 +1835,8 @@ static void WriteBuffer(const FunctionCallbackInfo<Value>& args) {
   CHECK_LE(static_cast<uint64_t>(off_64), buffer_length);
   const size_t off = static_cast<size_t>(off_64);
 
-  CHECK(IsSafeJsInt(args[3]));
-  const size_t len = static_cast<size_t>(args[3].As<Integer>()->Value());
+  CHECK(args[3]->IsInt32());
+  const size_t len = static_cast<size_t>(args[3].As<Int32>()->Value());
   CHECK(Buffer::IsWithinBounds(off, len, buffer_length));
   CHECK_LE(len, buffer_length);
   CHECK_GE(off + len, off);
@@ -2184,11 +2183,11 @@ static void Chown(const FunctionCallbackInfo<Value>& args) {
   BufferValue path(env->isolate(), args[0]);
   CHECK_NOT_NULL(*path);
 
-  CHECK(args[1]->IsUint32());
-  const uv_uid_t uid = static_cast<uv_uid_t>(args[1].As<Uint32>()->Value());
+  CHECK(IsSafeJsInt(args[1]));
+  const uv_uid_t uid = static_cast<uv_uid_t>(args[1].As<Integer>()->Value());
 
-  CHECK(args[2]->IsUint32());
-  const uv_gid_t gid = static_cast<uv_gid_t>(args[2].As<Uint32>()->Value());
+  CHECK(IsSafeJsInt(args[2]));
+  const uv_gid_t gid = static_cast<uv_gid_t>(args[2].As<Integer>()->Value());
 
   FSReqBase* req_wrap_async = GetReqWrap(args, 3);
   if (req_wrap_async != nullptr) {  // chown(path, uid, gid, req)
@@ -2217,11 +2216,11 @@ static void FChown(const FunctionCallbackInfo<Value>& args) {
   CHECK(args[0]->IsInt32());
   const int fd = args[0].As<Int32>()->Value();
 
-  CHECK(args[1]->IsUint32());
-  const uv_uid_t uid = static_cast<uv_uid_t>(args[1].As<Uint32>()->Value());
+  CHECK(IsSafeJsInt(args[1]));
+  const uv_uid_t uid = static_cast<uv_uid_t>(args[1].As<Integer>()->Value());
 
-  CHECK(args[2]->IsUint32());
-  const uv_gid_t gid = static_cast<uv_gid_t>(args[2].As<Uint32>()->Value());
+  CHECK(IsSafeJsInt(args[2]));
+  const uv_gid_t gid = static_cast<uv_gid_t>(args[2].As<Integer>()->Value());
 
   FSReqBase* req_wrap_async = GetReqWrap(args, 3);
   if (req_wrap_async != nullptr) {  // fchown(fd, uid, gid, req)
@@ -2247,11 +2246,11 @@ static void LChown(const FunctionCallbackInfo<Value>& args) {
   BufferValue path(env->isolate(), args[0]);
   CHECK_NOT_NULL(*path);
 
-  CHECK(args[1]->IsUint32());
-  const uv_uid_t uid = static_cast<uv_uid_t>(args[1].As<Uint32>()->Value());
+  CHECK(IsSafeJsInt(args[1]));
+  const uv_uid_t uid = static_cast<uv_uid_t>(args[1].As<Integer>()->Value());
 
-  CHECK(args[2]->IsUint32());
-  const uv_gid_t gid = static_cast<uv_gid_t>(args[2].As<Uint32>()->Value());
+  CHECK(IsSafeJsInt(args[2]));
+  const uv_gid_t gid = static_cast<uv_gid_t>(args[2].As<Integer>()->Value());
 
   FSReqBase* req_wrap_async = GetReqWrap(args, 3);
   if (req_wrap_async != nullptr) {  // lchown(path, uid, gid, req)
@@ -2483,7 +2482,6 @@ void Initialize(Local<Object> target,
 
   env->SetMethod(target, "chmod", Chmod);
   env->SetMethod(target, "fchmod", FChmod);
-  // env->SetMethod(target, "lchmod", LChmod);
 
   env->SetMethod(target, "chown", Chown);
   env->SetMethod(target, "fchown", FChown);
@@ -2600,7 +2598,6 @@ void RegisterExternalReferences(ExternalReferenceRegistry* registry) {
 
   registry->Register(Chmod);
   registry->Register(FChmod);
-  // registry->Register(LChmod);
 
   registry->Register(Chown);
   registry->Register(FChown);

@@ -5,6 +5,9 @@ const common = require('../common');
 if (!common.hasCrypto)
   common.skip('missing crypto');
 
+if (common.hasOpenSSL3)
+  common.skip('temporarily skipping for OpenSSL 3.0-alpha15');
+
 const assert = require('assert');
 const { subtle } = require('crypto').webcrypto;
 
@@ -14,7 +17,7 @@ const hashes = [
   'SHA-1',
   'SHA-256',
   'SHA-384',
-  'SHA-512'
+  'SHA-512',
 ];
 
 const keyData = {
@@ -115,7 +118,7 @@ const testVectors = [
     name: 'NODE-DSA',
     privateUsages: ['sign'],
     publicUsages: ['verify']
-  }
+  },
 ];
 
 (async function() {

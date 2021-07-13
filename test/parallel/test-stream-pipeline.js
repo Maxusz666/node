@@ -22,7 +22,7 @@ const net = require('net');
   const expected = [
     Buffer.from('a'),
     Buffer.from('b'),
-    Buffer.from('c')
+    Buffer.from('c'),
   ];
 
   const read = new Readable({
@@ -254,6 +254,40 @@ const net = require('net');
 }
 
 {
+  const server = http.createServer((req, res) => {
+    pipeline(req, res, common.mustSucceed());
+  });
+
+  server.listen(0, () => {
+    const req = http.request({
+      port: server.address().port
+    });
+
+    let sent = 0;
+    const rs = new Readable({
+      read() {
+        if (sent++ > 10) {
+          return;
+        }
+        rs.push('hello');
+      }
+    });
+
+    pipeline(rs, req, common.mustCall(() => {
+      server.close();
+    }));
+
+    req.on('response', (res) => {
+      let cnt = 10;
+      res.on('data', () => {
+        cnt--;
+        if (cnt === 0) rs.destroy();
+      });
+    });
+  });
+}
+
+{
   const makeTransform = () => {
     const tr = new Transform({
       transform(data, enc, cb) {
@@ -313,7 +347,7 @@ const net = require('net');
 
   const expected = [
     Buffer.from('hello'),
-    Buffer.from('world')
+    Buffer.from('world'),
   ];
 
   const rs = new Readable({
@@ -1001,7 +1035,7 @@ const net = require('net');
   const dst = new PassThrough();
   dst.readable = false;
   pipeline(src, dst, common.mustSucceed(() => {
-    assert.strictEqual(dst.destroyed, false);
+    assert.strictEqual(dst.destroyed, true);
   }));
   src.end();
 }

@@ -1,14 +1,12 @@
 const t = require('tap')
-const requireInject = require('require-inject')
 
 const settings = {
   level: 'warn',
 }
-t.afterEach(cb => {
+t.afterEach(() => {
   Object.keys(settings).forEach(k => {
     delete settings[k]
   })
-  cb()
 })
 
 const WARN_CALLED = []
@@ -61,7 +59,7 @@ const npmlog = {
 }
 
 const EXPLAIN_CALLED = []
-const setupLog = requireInject('../../../lib/utils/setup-log.js', {
+const setupLog = t.mock('../../../lib/utils/setup-log.js', {
   '../../../lib/utils/explain-eresolve.js': {
     explain: (...args) => {
       EXPLAIN_CALLED.push(args)
@@ -94,7 +92,7 @@ t.test('setup with color=always and unicode', t => {
   })), true)
 
   npmlog.warn('ERESOLVE', 'hello', { some: { other: 'object' } })
-  t.strictSame(EXPLAIN_CALLED, [[{ some: { other: 'object' } }]],
+  t.strictSame(EXPLAIN_CALLED, [[{ some: { other: 'object' } }, true, 2]],
     'log.warn(ERESOLVE) patched to call explainEresolve()')
   t.strictSame(WARN_CALLED, [
     ['ERESOLVE', 'hello'],

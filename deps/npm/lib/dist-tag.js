@@ -4,12 +4,17 @@ const regFetch = require('npm-registry-fetch')
 const semver = require('semver')
 
 const otplease = require('./utils/otplease.js')
-const readLocalPkgName = require('./utils/read-local-package.js')
+const readPackageName = require('./utils/read-package-name.js')
 const BaseCommand = require('./base-command.js')
 
 class DistTag extends BaseCommand {
   static get description () {
     return 'Modify package distribution tags'
+  }
+
+  /* istanbul ignore next - see test/lib/load-all-commands.js */
+  static get params () {
+    return ['workspace', 'workspaces']
   }
 
   /* istanbul ignore next - see test/lib/load-all-commands.js */
@@ -43,15 +48,14 @@ class DistTag extends BaseCommand {
 
   async distTag ([cmdName, pkg, tag]) {
     const opts = this.npm.flatOptions
-    const has = (items) => new Set(items).has(cmdName)
 
-    if (has(['add', 'a', 'set', 's']))
+    if (['add', 'a', 'set', 's'].includes(cmdName))
       return this.add(pkg, tag, opts)
 
-    if (has(['rm', 'r', 'del', 'd', 'remove']))
+    if (['rm', 'r', 'del', 'd', 'remove'].includes(cmdName))
       return this.remove(pkg, tag, opts)
 
-    if (has(['ls', 'l', 'sl', 'list']))
+    if (['ls', 'l', 'sl', 'list'].includes(cmdName))
       return this.list(pkg, opts)
 
     if (!pkg) {
@@ -59,7 +63,34 @@ class DistTag extends BaseCommand {
       // should be listing the existing tags
       return this.list(cmdName, opts)
     } else
-      throw this.usage
+      throw this.usageError()
+  }
+
+  execWorkspaces (args, filters, cb) {
+    this.distTagWorkspaces(args, filters).then(() => cb()).catch(cb)
+  }
+
+  async distTagWorkspaces ([cmdName, pkg, tag], filters) {
+    // cmdName is some form of list
+    // pkg is one of:
+    // - unset
+    // - .
+    // - .@version
+    if (['ls', 'l', 'sl', 'list'].includes(cmdName) && (!pkg || pkg === '.' || /^\.@/.test(pkg)))
+      return this.listWorkspaces(filters)
+
+    // pkg is unset
+    // cmdName is one of:
+    // - unset
+    // - .
+    // - .@version
+    if (!pkg && (!cmdName || cmdName === '.' || /^\.@/.test(cmdName)))
+      return this.listWorkspaces(filters)
+
+    // anything else is just a regular dist-tag command
+    // so we fallback to the non-workspaces implementation
+    log.warn('Ignoring workspaces for specified package')
+    return this.distTag([cmdName, pkg, tag])
   }
 
   async add (spec, tag, opts) {
@@ -70,7 +101,7 @@ class DistTag extends BaseCommand {
     log.verbose('dist-tag add', defaultTag, 'to', spec.name + '@' + version)
 
     if (!spec.name || !version || !defaultTag)
-      throw this.usage
+      throw this.usageError()
 
     const t = defaultTag.trim()
 
@@ -103,7 +134,7 @@ class DistTag extends BaseCommand {
     log.verbose('dist-tag del', tag, 'from', spec.name)
 
     if (!spec.name)
-      throw this.usage
+      throw this.usageError()
 
     const tags = await this.fetchTags(spec, opts)
     if (!tags[tag]) {
@@ -125,9 +156,11 @@ class DistTag extends BaseCommand {
 
   async list (spec, opts) {
     if (!spec) {
-      const pkg = await readLocalPkgName(this.npm)
+      if (this.npm.config.get('global'))
+        throw this.usageError()
+      const pkg = await readPackageName(this.npm.prefix)
       if (!pkg)
-        throw this.usage
+        throw this.usageError()
 
       return this.list(pkg, opts)
     }
@@ -142,6 +175,21 @@ class DistTag extends BaseCommand {
     } catch (err) {
       log.error('dist-tag ls', "Couldn't get dist-tag data for", spec)
       throw err
+    }
+  }
+
+  async listWorkspaces (filters) {
+    await this.setWorkspaces(filters)
+
+    for (const name of this.workspaceNames) {
+      try {
+        this.npm.output(`${name}:`)
+        await this.list(npa(name), this.npm.flatOptions)
+      } catch (err) {
+        // set the exitCode directly, but ignore the error
+        // since it will have already been logged by this.list()
+        process.exitCode = 1
+      }
     }
   }
 

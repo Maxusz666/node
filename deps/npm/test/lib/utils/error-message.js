@@ -1,4 +1,5 @@
 const t = require('tap')
+const path = require('path')
 
 // make a bunch of stuff consistent for snapshots
 
@@ -9,22 +10,6 @@ Object.defineProperty(process, 'arch', {
   value: 'x64',
   configurable: true,
 })
-
-const beWindows = () => {
-  Object.defineProperty(process, 'platform', {
-    value: 'win32',
-    configurable: true,
-  })
-  delete require.cache[require.resolve('../../../lib/utils/is-windows.js')]
-}
-
-const bePosix = () => {
-  Object.defineProperty(process, 'platform', {
-    value: 'posix',
-    configurable: true,
-  })
-  delete require.cache[require.resolve('../../../lib/utils/is-windows.js')]
-}
 
 const { resolve } = require('path')
 const npm = require('../../../lib/npm.js')
@@ -56,16 +41,36 @@ npmlog.verbose = (...message) => {
   verboseLogs.push(message)
 }
 
-const requireInject = require('require-inject')
 const EXPLAIN_CALLED = []
-const errorMessage = requireInject('../../../lib/utils/error-message.js', {
+const mocks = {
   '../../../lib/utils/explain-eresolve.js': {
     report: (...args) => {
       EXPLAIN_CALLED.push(args)
       return 'explanation'
     },
   },
-})
+  // XXX ???
+  get '../../../lib/utils/is-windows.js' () {
+    return process.platform === 'win32'
+  },
+}
+let errorMessage = t.mock('../../../lib/utils/error-message.js', { ...mocks })
+
+const beWindows = () => {
+  Object.defineProperty(process, 'platform', {
+    value: 'win32',
+    configurable: true,
+  })
+  errorMessage = t.mock('../../../lib/utils/error-message.js', { ...mocks })
+}
+
+const bePosix = () => {
+  Object.defineProperty(process, 'platform', {
+    value: 'posix',
+    configurable: true,
+  })
+  errorMessage = t.mock('../../../lib/utils/error-message.js', { ...mocks })
+}
 
 t.test('just simple messages', t => {
   npm.command = 'audit'
@@ -106,7 +111,7 @@ t.test('just simple messages', t => {
       file,
       stack,
     })
-    t.matchSnapshot(errorMessage(er))
+    t.matchSnapshot(errorMessage(er, npm))
   })
 })
 
@@ -124,7 +129,7 @@ t.test('replace message/stack sensistive info', t => {
     file,
     stack,
   })
-  t.matchSnapshot(errorMessage(er))
+  t.matchSnapshot(errorMessage(er, npm))
   t.end()
 })
 
@@ -144,7 +149,7 @@ t.test('bad engine with config loaded', t => {
     file,
     stack,
   })
-  t.matchSnapshot(errorMessage(er))
+  t.matchSnapshot(errorMessage(er, npm))
   t.end()
 })
 
@@ -158,7 +163,7 @@ t.test('enoent without a file', t => {
     pkgid,
     stack,
   })
-  t.matchSnapshot(errorMessage(er))
+  t.matchSnapshot(errorMessage(er, npm))
   t.end()
 })
 
@@ -175,20 +180,20 @@ t.test('enolock without a command', t => {
     file,
     stack,
   })
-  t.matchSnapshot(errorMessage(er))
+  t.matchSnapshot(errorMessage(er, npm))
   t.end()
 })
 
 t.test('default message', t => {
-  t.matchSnapshot(errorMessage(new Error('error object')))
-  t.matchSnapshot(errorMessage('error string'))
+  t.matchSnapshot(errorMessage(new Error('error object'), npm))
+  t.matchSnapshot(errorMessage('error string'), npm)
   t.matchSnapshot(errorMessage(Object.assign(new Error('cmd err'), {
     cmd: 'some command',
     signal: 'SIGYOLO',
     args: ['a', 'r', 'g', 's'],
     stdout: 'stdout',
     stderr: 'stderr',
-  })))
+  }), npm))
   t.end()
 })
 
@@ -209,7 +214,7 @@ t.test('eacces/eperm', t => {
       stack: 'dummy stack trace',
     })
     verboseLogs.length = 0
-    t.matchSnapshot(errorMessage(er))
+    t.matchSnapshot(errorMessage(er, npm))
     t.matchSnapshot(verboseLogs)
     t.end()
     verboseLogs.length = 0
@@ -284,7 +289,7 @@ t.test('json parse', t => {
     t.matchSnapshot(errorMessage(Object.assign(new Error('conflicted'), {
       code: 'EJSONPARSE',
       file: resolve(dir, 'package.json'),
-    })))
+    }), npm))
     t.end()
   })
 
@@ -306,7 +311,7 @@ t.test('json parse', t => {
     t.matchSnapshot(errorMessage(Object.assign(new Error('not json'), {
       code: 'EJSONPARSE',
       file: resolve(dir, 'package.json'),
-    })))
+    }), npm))
     t.end()
   })
 
@@ -322,7 +327,7 @@ t.test('json parse', t => {
     t.matchSnapshot(errorMessage(Object.assign(new Error('not json'), {
       code: 'EJSONPARSE',
       file: `${dir}/blerg.json`,
-    })))
+    }), npm))
     t.end()
   })
 
@@ -333,21 +338,21 @@ t.test('eotp/e401', t => {
   t.test('401, no auth headers', t => {
     t.matchSnapshot(errorMessage(Object.assign(new Error('nope'), {
       code: 'E401',
-    })))
+    }), npm))
     t.end()
   })
 
   t.test('401, no message', t => {
     t.matchSnapshot(errorMessage({
       code: 'E401',
-    }))
+    }, npm))
     t.end()
   })
 
   t.test('one-time pass challenge code', t => {
     t.matchSnapshot(errorMessage(Object.assign(new Error('nope'), {
       code: 'EOTP',
-    })))
+    }), npm))
     t.end()
   })
 
@@ -355,7 +360,7 @@ t.test('eotp/e401', t => {
     const message = 'one-time pass'
     t.matchSnapshot(errorMessage(Object.assign(new Error(message), {
       code: 'E401',
-    })))
+    }), npm))
     t.end()
   })
 
@@ -375,7 +380,7 @@ t.test('eotp/e401', t => {
           },
           code: 'E401',
         })
-        t.matchSnapshot(errorMessage(er))
+        t.matchSnapshot(errorMessage(er, npm))
         t.end()
       })
     }
@@ -387,7 +392,7 @@ t.test('eotp/e401', t => {
 t.test('404', t => {
   t.test('no package id', t => {
     const er = Object.assign(new Error('404 not found'), { code: 'E404' })
-    t.matchSnapshot(errorMessage(er))
+    t.matchSnapshot(errorMessage(er, npm))
     t.end()
   })
   t.test('you should publish it', t => {
@@ -395,7 +400,7 @@ t.test('404', t => {
       pkgid: 'yolo',
       code: 'E404',
     })
-    t.matchSnapshot(errorMessage(er))
+    t.matchSnapshot(errorMessage(er, npm))
     t.end()
   })
   t.test('name with warning', t => {
@@ -403,7 +408,7 @@ t.test('404', t => {
       pkgid: new Array(215).fill('x').join(''),
       code: 'E404',
     })
-    t.matchSnapshot(errorMessage(er))
+    t.matchSnapshot(errorMessage(er, npm))
     t.end()
   })
   t.test('name with error', t => {
@@ -411,7 +416,7 @@ t.test('404', t => {
       pkgid: 'node_modules',
       code: 'E404',
     })
-    t.matchSnapshot(errorMessage(er))
+    t.matchSnapshot(errorMessage(er, npm))
     t.end()
   })
   t.end()
@@ -431,7 +436,7 @@ t.test('bad platform', t => {
       },
       code: 'EBADPLATFORM',
     })
-    t.matchSnapshot(errorMessage(er))
+    t.matchSnapshot(errorMessage(er, npm))
     t.end()
   })
   t.test('array os/arch', t => {
@@ -447,7 +452,7 @@ t.test('bad platform', t => {
       },
       code: 'EBADPLATFORM',
     })
-    t.matchSnapshot(errorMessage(er))
+    t.matchSnapshot(errorMessage(er, npm))
     t.end()
   })
 
@@ -458,7 +463,11 @@ t.test('explain ERESOLVE errors', t => {
   const er = Object.assign(new Error('could not resolve'), {
     code: 'ERESOLVE',
   })
-  t.matchSnapshot(errorMessage(er))
-  t.strictSame(EXPLAIN_CALLED, [[er]])
+  t.matchSnapshot(errorMessage(er, npm))
+  t.match(EXPLAIN_CALLED, [[
+    er,
+    undefined,
+    path.resolve(npm.cache, 'eresolve-report.txt'),
+  ]])
   t.end()
 })

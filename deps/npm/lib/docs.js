@@ -16,6 +16,11 @@ class Docs extends BaseCommand {
   }
 
   /* istanbul ignore next - see test/lib/load-all-commands.js */
+  static get params () {
+    return ['browser', 'registry', 'workspace', 'workspaces']
+  }
+
+  /* istanbul ignore next - see test/lib/load-all-commands.js */
   static get usage () {
     return ['[<pkgname> [<pkgname> ...]]']
   }
@@ -24,11 +29,20 @@ class Docs extends BaseCommand {
     this.docs(args).then(() => cb()).catch(cb)
   }
 
+  execWorkspaces (args, filters, cb) {
+    this.docsWorkspaces(args, filters).then(() => cb()).catch(cb)
+  }
+
   async docs (args) {
     if (!args || !args.length)
       args = ['.']
 
     await Promise.all(args.map(pkg => this.getDocs(pkg)))
+  }
+
+  async docsWorkspaces (args, filters) {
+    await this.setWorkspaces(filters)
+    return this.docs(this.workspacePaths)
   }
 
   async getDocs (pkg) {

@@ -24,7 +24,7 @@
 #endif  // !OPENSSL_NO_ENGINE
 // The FIPS-related functions are only available
 // when the OpenSSL itself was compiled with FIPS support.
-#ifdef  OPENSSL_FIPS
+#if defined(OPENSSL_FIPS) && OPENSSL_VERSION_MAJOR < 3
 #  include <openssl/fips.h>
 #endif  // OPENSSL_FIPS
 
@@ -85,6 +85,8 @@ using DsaSigPointer = DeleteFnPtr<DSA_SIG, DSA_SIG_free>;
 // that the user user Connection::VerifyError after the `secure`
 // callback has been made.
 extern int VerifyCallback(int preverify_ok, X509_STORE_CTX* ctx);
+
+bool ProcessFipsOptions();
 
 void InitCryptoOnce();
 
@@ -188,8 +190,8 @@ struct CryptoErrorStore final : public MemoryRetainer {
       v8::Local<v8::String> exception_string = v8::Local<v8::String>()) const;
 
   SET_NO_MEMORY_INFO()
-  SET_MEMORY_INFO_NAME(CryptoErrorStore);
-  SET_SELF_SIZE(CryptoErrorStore);
+  SET_MEMORY_INFO_NAME(CryptoErrorStore)
+  SET_SELF_SIZE(CryptoErrorStore)
 
  private:
   std::vector<std::string> errors_;
@@ -349,9 +351,27 @@ class CryptoJob : public AsyncWrap, public ThreadPoolWork {
     if (status == UV_ECANCELED) return;
     v8::HandleScope handle_scope(env->isolate());
     v8::Context::Scope context_scope(env->context());
+
+    // TODO(tniessen): Remove the exception handling logic here as soon as we
+    // can verify that no code path in ToResult will ever throw an exception.
+    v8::Local<v8::Value> exception;
     v8::Local<v8::Value> args[2];
-    if (ptr->ToResult(&args[0], &args[1]).FromJust())
+    {
+      node::errors::TryCatchScope try_catch(env);
+      v8::Maybe<bool> ret = ptr->ToResult(&args[0], &args[1]);
+      if (!ret.IsJust()) {
+        CHECK(try_catch.HasCaught());
+        exception = try_catch.Exception();
+      } else if (!ret.FromJust()) {
+        return;
+      }
+    }
+
+    if (exception.IsEmpty()) {
       ptr->MakeCallback(env->ondone_string(), arraysize(args), args);
+    } else {
+      ptr->MakeCallback(env->ondone_string(), 1, &exception);
+    }
   }
 
   virtual v8::Maybe<bool> ToResult(
@@ -384,7 +404,8 @@ class CryptoJob : public AsyncWrap, public ThreadPoolWork {
     v8::Local<v8::Value> ret[2];
     env->PrintSyncTrace();
     job->DoThreadPoolWork();
-    if (job->ToResult(&ret[0], &ret[1]).FromJust()) {
+    v8::Maybe<bool> result = job->ToResult(&ret[0], &ret[1]);
+    if (result.IsJust() && result.FromJust()) {
       args.GetReturnValue().Set(
           v8::Array::New(env->isolate(), ret, arraysize(ret)));
     }
@@ -483,7 +504,7 @@ class DeriveBitsJob final : public CryptoJob<DeriveBitsTraits> {
     return v8::Just(errors->ToException(env).ToLocal(err));
   }
 
-  SET_SELF_SIZE(DeriveBitsJob);
+  SET_SELF_SIZE(DeriveBitsJob)
   void MemoryInfo(MemoryTracker* tracker) const override {
     tracker->TrackFieldWithSize("out", out_.size());
     CryptoJob<DeriveBitsTraits>::MemoryInfo(tracker);

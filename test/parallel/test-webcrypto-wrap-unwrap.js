@@ -5,6 +5,9 @@ const common = require('../common');
 if (!common.hasCrypto)
   common.skip('missing crypto');
 
+if (common.hasOpenSSL3)
+  common.skip('temporarily skipping for OpenSSL 3.0-alpha15');
+
 const assert = require('assert');
 const { subtle } = require('crypto').webcrypto;
 
@@ -64,7 +67,7 @@ async function generateKeysToWrap() {
   const parameters = [
     {
       algorithm: {
-        name: 'RSASSA-PKCS1-V1_5',
+        name: 'RSASSA-PKCS1-v1_5',
         modulusLength: 1024,
         publicExponent: new Uint8Array([1, 0, 1]),
         hash: 'SHA-256'
@@ -152,7 +155,7 @@ async function generateKeysToWrap() {
       },
       usages: ['sign', 'verify'],
       pair: false,
-    }
+    },
   ];
 
   const allkeys = await Promise.all(parameters.map(async (params) => {
@@ -173,7 +176,7 @@ async function generateKeysToWrap() {
           algorithm: params.algorithm,
           usages: params.privateUsages,
           key: keys.privateKey,
-        }
+        },
       ];
     }
 

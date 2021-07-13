@@ -515,9 +515,7 @@ std::shared_ptr<KeyObjectData> ImportJWKAsymmetricKey(
     return ImportJWKEcKey(env, jwk, args, offset);
   }
 
-  char msg[1024];
-  snprintf(msg, sizeof(msg), "%s is not a supported JWK key type", kty);
-  THROW_ERR_CRYPTO_INVALID_JWK(env, msg);
+  THROW_ERR_CRYPTO_INVALID_JWK(env, "%s is not a supported JWK key type", kty);
   return std::shared_ptr<KeyObjectData>();
 }
 
@@ -602,6 +600,11 @@ size_t ManagedEVPPKey::size_of_public_key() const {
       pkey_.get(), nullptr, &len) == 1) ? len : 0;
 }
 
+// This maps true to Just<bool>(true) and false to Nothing<bool>().
+static inline Maybe<bool> Tristate(bool b) {
+  return b ? Just(true) : Nothing<bool>();
+}
+
 Maybe<bool> ManagedEVPPKey::ToEncodedPublicKey(
     Environment* env,
     ManagedEVPPKey key,
@@ -613,9 +616,10 @@ Maybe<bool> ManagedEVPPKey::ToEncodedPublicKey(
     // private key.
     std::shared_ptr<KeyObjectData> data =
           KeyObjectData::CreateAsymmetric(kKeyTypePublic, std::move(key));
-    return Just(KeyObjectHandle::Create(env, data).ToLocal(out));
+    return Tristate(KeyObjectHandle::Create(env, data).ToLocal(out));
   }
-  return Just(WritePublicKey(env, key.get(), config).ToLocal(out));
+
+  return Tristate(WritePublicKey(env, key.get(), config).ToLocal(out));
 }
 
 Maybe<bool> ManagedEVPPKey::ToEncodedPrivateKey(
@@ -627,10 +631,10 @@ Maybe<bool> ManagedEVPPKey::ToEncodedPrivateKey(
   if (config.output_key_object_) {
     std::shared_ptr<KeyObjectData> data =
         KeyObjectData::CreateAsymmetric(kKeyTypePrivate, std::move(key));
-    return Just(KeyObjectHandle::Create(env, data).ToLocal(out));
+    return Tristate(KeyObjectHandle::Create(env, data).ToLocal(out));
   }
 
-  return Just(WritePrivateKey(env, key.get(), config).ToLocal(out));
+  return Tristate(WritePrivateKey(env, key.get(), config).ToLocal(out));
 }
 
 NonCopyableMaybe<PrivateKeyEncodingConfig>
@@ -829,11 +833,6 @@ void KeyObjectData::MemoryInfo(MemoryTracker* tracker) const {
     default:
       UNREACHABLE();
   }
-}
-
-std::shared_ptr<KeyObjectData> KeyObjectData::CreateSecret(
-    const ArrayBufferOrViewContents<char>& buf) {
-  return CreateSecret(buf.ToCopy());
 }
 
 std::shared_ptr<KeyObjectData> KeyObjectData::CreateSecret(ByteSource key) {

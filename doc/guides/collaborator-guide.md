@@ -30,7 +30,7 @@
   * [Technical HOWTO](#technical-howto)
   * [Troubleshooting](#troubleshooting)
   * [I made a mistake](#i-made-a-mistake)
-  * [Long term support](#long-term-support)
+  * [Long Term Support](#long-term-support)
     * [What is LTS?](#what-is-lts)
     * [How are LTS branches managed?](#how-are-lts-branches-managed)
     * [How can I help?](#how-can-i-help)
@@ -90,32 +90,25 @@ to land but is [author ready](#author-ready-pull-requests), add the
 
 ### Managing security issues
 
-Security issues should ideally be reported through the processes outlined in
-[SECURITY.md][security reporting]. This allows the collaborators to
-appropriately triage the report and address vulnerabilities in a planned
-security release. If an issue is opened in the public repo
-which describes a security issue, or if an issue is later identified to be
-describing a security issue, take the following steps:
+Use the process outlined in [SECURITY.md][] to report security
+issues. If a user opens a security issue in the public repository:
 
-* Ask the originator to submit a report through Hacker one as outlined in
-  [SECURITY.md][security reporting].
-* Move the issue to the private repo called
+* Ask the user to submit a report through HackerOne as outlined in
+  [SECURITY.md][].
+* Move the issue to the private repository called
   [premature-disclosures](https://github.com/nodejs/premature-disclosures).
 * For any related pull requests, create an associated issue in the
   `premature-disclosures` repository.  Add a copy of the patch for the
   pull request to the issue. Add screenshots of discussion from the pull request
   to the issue.
-* Open a ticket with GitHub asking that the pull requests be deleted through
-  [GitHub support](https://support.github.com/contact)
-  using Node.js(team) as the account organization.
-* Open a new issue in the repository in which the issue was originally
-  reported with a brief FYI to the originator: "FYI @xxxx we asked GitHub
-  to delete your pull request while we work on releases in private." with the
-  title `FYI - pull request deleted #YYYY`.
-* Email `tsc@iojs.org` with the link to the issues in the
-  `premature-disclosures` repo so that the TSC is aware that they
-  may need to expedite handling of the issue due to premature
-  disclosure.
+* [Open a ticket with GitHub](https://support.github.com/contact) to delete the
+  pull request using Node.js (team) as the account organization.
+* Open a new issue in the public repository with the title `FYI - pull request
+  deleted #YYYY`. Include an explanation for the user:
+  > FYI @xxxx we asked GitHub to delete your pull request while we work on
+  > releases in private.
+* Email `tsc@iojs.org` with links to the issues in the
+  `premature-disclosures` repository.
 
 ## Accepting modifications
 
@@ -559,7 +552,7 @@ Checkout proper target branch:
 $ git checkout master
 ```
 
-Update the tree (assumes your repo is set up as detailed in
+Update the tree (assumes your repository is set up as detailed in
 [CONTRIBUTING.md](./contributing/pull-requests.md#step-1-fork)):
 
 ```text
@@ -733,7 +726,6 @@ git push upstream master
 ### I made a mistake
 
 * Ping a TSC member.
-* `#node-dev` on freenode.
 * With `git`, there's a way to override remote trees by force pushing
   (`git push -f`). This is generally forbidden as it creates conflicts in other
   people's forks. It is permissible for simpler slip-ups such as typos in commit
@@ -742,9 +734,8 @@ git push upstream master
   10-minute period passes, consider the commit final.
   * Use `--force-with-lease` to reduce the chance of overwriting someone else's
     change.
-  * Post to `#node-dev` (IRC) if you force push.
 
-### Long term support
+### Long Term Support
 
 #### What is LTS?
 
@@ -840,8 +831,89 @@ When things need extra attention, are controversial, or `semver-major`:
 
 If you cannot find who to cc for a file, `git shortlog -n -s <file>` can help.
 
+## Labels
+
+### General labels
+
+* `confirmed-bug`: Bugs you have verified
+* `discuss`: Things that need larger discussion
+* `feature request`: Any issue that requests a new feature
+* `good first issue`: Issues suitable for newcomers to fix
+* `meta`: Governance, policies, procedures, etc.
+* `tsc-agenda`: Open issues and pull requests with this label will be added to
+  the Technical Steering Committee meeting agenda
+
+---
+
+* `author-ready` - A pull request is _author ready_ when:
+  * There is a CI run in progress or completed.
+  * There is at least one Collaborator approval (or two TSC approvals for
+    semver-major pull requests).
+  * There are no outstanding review comments.
+
+Please always add the `author ready` label to pull requests that qualify.
+Please always remove it again as soon as the conditions are not met anymore,
+such as if the CI run fails or a new outstanding review comment is posted.
+
+---
+
+* `semver-{minor,major}`
+  * be conservative – that is, if a change has the remote *chance* of breaking
+    something, go for semver-major
+  * when adding a semver label, add a comment explaining why you're adding it
+  * minor vs. patch: roughly: "does it add a new method / does it add a new
+    section to the docs"
+  * major vs. everything else: run last versions tests against this version, if
+    they pass, **probably** minor or patch
+
+### LTS/version labels
+
+We use labels to keep track of which branches a commit should land on:
+
+* `dont-land-on-v?.x`
+  * For changes that do not apply to a certain release line
+  * Also used when the work of backporting a change outweighs the benefits
+* `land-on-v?.x`
+  * Used by releasers to mark a pull request as scheduled for inclusion in an
+    LTS release
+  * Applied to the original pull request for clean cherry-picks, to the backport
+    pull request otherwise
+* `backport-requested-v?.x`
+  * Used to indicate that a pull request needs a manual backport to a branch in
+    order to land the changes on that branch
+  * Typically applied by a releaser when the pull request does not apply cleanly
+    or it breaks the tests after applying
+  * Will be replaced by either `dont-land-on-v?.x` or `backported-to-v?.x`
+* `backported-to-v?.x`
+  * Applied to pull requests for which a backport pull request has been merged
+* `lts-watch-v?.x`
+  * Applied to pull requests which the Release working group should consider
+    including in an LTS release
+  * Does not indicate that any specific action will be taken, but can be
+    effective as messaging to non-collaborators
+* `release-agenda`
+  * For things that need discussion by the Release working group
+  * (for example semver-minor changes that need or should go into an LTS
+    release)
+* `v?.x`
+  * Automatically applied to changes that do not target `master` but rather the
+    `v?.x-staging` branch
+
+Once a release line enters maintenance mode, the corresponding labels do not
+need to be attached anymore, as only important bugfixes will be included.
+
+### Other labels
+
+* Operating system labels
+  * `macos`, `windows`, `smartos`, `aix`
+  * No `linux` label because it is the implied default
+* Architecture labels
+  * `arm`, `mips`, `s390`, `ppc`
+  * No `x86{_64}` label because it is the implied default
+
 ["Merge Pull Request"]: https://help.github.com/articles/merging-a-pull-request/#merging-a-pull-request-on-github
 [Deprecation]: https://en.wikipedia.org/wiki/Deprecation
+[SECURITY.md]: https://github.com/nodejs/node/blob/HEAD/SECURITY.md
 [Stability Index]: ../api/documentation.md#stability-index
 [TSC]: https://github.com/nodejs/TSC
 [`--pending-deprecation`]: ../api/cli.md#--pending-deprecation
@@ -856,5 +928,4 @@ If you cannot find who to cc for a file, `git shortlog -n -s <file>` can help.
 [git-username]: https://help.github.com/articles/setting-your-username-in-git/
 [node-core-utils-credentials]: https://github.com/nodejs/node-core-utils#setting-up-credentials
 [node-core-utils-issues]: https://github.com/nodejs/node-core-utils/issues
-[security reporting]: https://github.com/nodejs/node/blob/HEAD/SECURITY.md
 [unreliable tests]: https://github.com/nodejs/node/issues?q=is%3Aopen+is%3Aissue+label%3A%22CI+%2F+flaky+test%22
